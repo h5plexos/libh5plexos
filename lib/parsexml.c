@@ -17,12 +17,12 @@ enum xmlDepth { root, row, rowData, n_xmllevels };
 struct parserState {
 
     int depth;
-    struct plexosTable* table;
 
     bool save_text;
-    char row_value[XMLMAXTEXTLENGTH + 1];
-    size_t row_value_length;
+    char text[XMLMAXTEXTLENGTH + 1];
+    size_t text_length;
 
+    struct plexosTable* table;
     void* row_data;
 
 };
@@ -57,7 +57,7 @@ void parse(zip_t* archive, int* err, zip_int64_t xml_idx, struct parseSpec spec)
     while (!done) {
 
         n = zip_fread(xml, buf, XMLBUFFERSIZE);
-        printf("Read %d bytes\n", n);
+        //printf("Read %d bytes\n", n);
 
         if (n <= 0) {
             done = true;
@@ -139,17 +139,17 @@ static void XMLCALL summary_text(void* data, const XML_Char* s, int n) {
 
     if (state.save_text) {
 
-        state.row_value_length += n;
+        state.text_length += n;
 
-        if (state.row_value_length > XMLMAXTEXTLENGTH) {
+        if (state.text_length > XMLMAXTEXTLENGTH) {
             fprintf(stderr,
                     "Encountered a PLEXOS entity index longer than "
                     "%d characters: '%s%.*s'",
-                    XMLMAXTEXTLENGTH, state.row_value, n, s);
+                    XMLMAXTEXTLENGTH, state.text, n, s);
             exit(EXIT_FAILURE);
         }
 
-        strncat(state.row_value, s, n);
+        strncat(state.text, s, n);
 
     }
 
@@ -161,7 +161,7 @@ static void XMLCALL summary_end(void* data, const XML_Char* el) {
 
     if (state.save_text) {
 
-        int idx = atoi(state.row_value);
+        int idx = atoi(state.text);
 
         if (!state.table->zeroindexed) {
             idx--;
@@ -172,8 +172,8 @@ static void XMLCALL summary_end(void* data, const XML_Char* el) {
         }
 
         state.save_text = false;
-        state.row_value[0] = '\0';
-        state.row_value_length = 0;
+        state.text[0] = '\0';
+        state.text_length = 0;
 
     }
 
@@ -195,7 +195,7 @@ static void XMLCALL data_start(
 
     switch (state.depth) {
 
-        case root:      printf("%s\n", el);
+        case root:      //printf("%s\n", el);
                         if (strcmp(el, "SolutionDataset") != 0) {
                             fprintf(stderr, 
                                     "Unrecognized PLEXOS XML data format "
@@ -204,7 +204,7 @@ static void XMLCALL data_start(
                         }
                         break;
 
-        case row:       printf(" %s\n", el);
+        case row:       //printf(" %s\n", el);
                         state.table = get_plexostable(el);
                         if (state.table == NULL) {
                             fprintf(stderr, "Error parsing row in %s\n", el);
@@ -232,17 +232,17 @@ static void XMLCALL data_text(void* data, const XML_Char* s, int n) {
 
     if (state.save_text) {
 
-        state.row_value_length += n;
+        state.text_length += n;
 
-        if (state.row_value_length > XMLMAXTEXTLENGTH) {
+        if (state.text_length > XMLMAXTEXTLENGTH) {
             fprintf(stderr,
                     "Encountered a PLEXOS entity field value longer than "
                     "%d characters: '%s%.*s'",
-                    XMLMAXTEXTLENGTH, state.row_value, n, s);
+                    XMLMAXTEXTLENGTH, state.text, n, s);
             exit(EXIT_FAILURE);
         }
 
-        strncat(state.row_value, s, n);
+        strncat(state.text, s, n);
 
     }
 
@@ -252,12 +252,12 @@ static void XMLCALL data_end(void* data, const XML_Char* el) {
 
     if (state.save_text) {
 
-        printf("  %s = %s\n", el, state.row_value);
+        //printf("  %s = %s\n", el, state.text);
 
         // TODO: need to store implicit-index table row pointers in data too!
         if ((state.table->id != NULL) && (strcmp(el, state.table->id) == 0)) {
 
-            size_t idx = atoi(state.row_value);
+            size_t idx = atoi(state.text);
 
             if (!state.table->zeroindexed) {
                 idx--;
@@ -268,13 +268,13 @@ static void XMLCALL data_end(void* data, const XML_Char* el) {
         } else {
 
             (state.table->populator)(
-                state.row_data, el, state.row_value);
+                state.row_data, el, state.text);
 
         }
 
         state.save_text = false;
-        state.row_value[0] = '\0';
-        state.row_value_length = 0;
+        state.text[0] = '\0';
+        state.text_length = 0;
 
     }
 
