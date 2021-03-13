@@ -229,11 +229,41 @@ void populate_object(void* p, const char* field, const char* value) {
 
     struct plexosObject* row = p;
 
+    if (strequals(field, "name")) {
+        row->name = stralloc(value);
+    } else if (strequals(field, "index")) {
+        row->index = atoi(value);
+    } else if (strequals(field, "show")) {
+        row->show = strbool(value);
+    } else if (strequals(field, "class_id")) {
+        row->class.idx = atoi(value);
+    } else if (strequals(field, "category_id")) {
+        row->category.idx = atoi(value);
+    } else {
+        fprintf(stderr, "Unexpected field %s in object table\n", field);
+        exit(EXIT_FAILURE);
+    }
+
 }
 
 void populate_membership(void* p, const char* field, const char* value) {
 
     struct plexosMembership* row = p;
+
+    if (strequals(field, "parent_class_id")) {
+        row->parentclass.idx = atoi(value);
+    } else if (strequals(field, "child_class_id")) {
+        row->childclass.idx = atoi(value);
+    } else if (strequals(field, "collection_id")) {
+        row->collection.idx = atoi(value);
+    } else if (strequals(field, "parent_object_id")) {
+        row->parentobject.idx = atoi(value);
+    } else if (strequals(field, "child_object_id")) {
+        row->childobject.idx = atoi(value);
+    } else {
+        fprintf(stderr, "Unexpected field %s in membership table\n", field);
+        exit(EXIT_FAILURE);
+    }
 
 }
 
@@ -241,11 +271,43 @@ void populate_attribute_data(void* p, const char* field, const char* value) {
 
     struct plexosAttributeData* row = p;
 
+    if (strequals(field, "value")) {
+        row->value = atof(value);
+    } else if (strequals(field, "attribute_id")) {
+        row->attribute.idx = atoi(value);
+    } else if (strequals(field, "object_id")) {
+        row->object.idx = atoi(value);
+    } else {
+        fprintf(stderr, "Unexpected field %s in object table\n", field);
+        exit(EXIT_FAILURE);
+    }
+
 }
 
 void populate_period_0(void* p, const char* field, const char* value) {
 
     struct plexosPeriod0* row = p;
+
+    if (strequals(field, "period_of_day")) {
+        row->periodofday = atoi(value);
+    } else if (strequals(field, "hour_id")) {
+        row->hour = atoi(value);
+    } else if (strequals(field, "day_id")) {
+        row->day = atoi(value);
+    } else if (strequals(field, "week_id")) {
+        row->week = atoi(value);
+    } else if (strequals(field, "month_id")) {
+        row->month = atoi(value);
+    } else if (strequals(field, "quarter_id")) {
+        row->quarter = atoi(value);
+    } else if (strequals(field, "fiscal_year_id")) {
+        row->fiscalyear = atoi(value);
+    } else if (strequals(field, "datetime")) {
+        row->datetime = stralloc(value);
+    } else {
+        fprintf(stderr, "Unexpected field %s in period_0 table\n", field);
+        exit(EXIT_FAILURE);
+    }
 
 }
 
@@ -253,11 +315,33 @@ void populate_period_1(void* p, const char* field, const char* value) {
 
     struct plexosPeriod1* row = p;
 
+    if (strequals(field, "week_id")) {
+        row->week = atoi(value);
+    } else if (strequals(field, "month_id")) {
+        row->month = atoi(value);
+    } else if (strequals(field, "quarter_id")) {
+        row->quarter = atoi(value);
+    } else if (strequals(field, "fiscal_year_id")) {
+        row->fiscalyear = atoi(value);
+    } else if (strequals(field, "date")) {
+        row->date = stralloc(value);
+    } else {
+        fprintf(stderr, "Unexpected field %s in period_1 table\n", field);
+        exit(EXIT_FAILURE);
+    }
+
 }
 
 void populate_period_2(void* p, const char* field, const char* value) {
 
     struct plexosPeriod2* row = p;
+
+    if (strequals(field, "week_ending")) {
+        row->weekending = stralloc(value);
+    } else {
+        fprintf(stderr, "Unexpected field %s in period_2 table\n", field);
+        exit(EXIT_FAILURE);
+    }
 
 }
 
@@ -265,11 +349,25 @@ void populate_period_3(void* p, const char* field, const char* value) {
 
     struct plexosPeriod3* row = p;
 
+    if (strequals(field, "month_beginning")) {
+        row->monthbeginning = stralloc(value);
+    } else {
+        fprintf(stderr, "Unexpected field %s in period_3 table\n", field);
+        exit(EXIT_FAILURE);
+    }
+
 }
 
 void populate_period_4(void* p, const char* field, const char* value) {
 
     struct plexosPeriod4* row = p;
+
+    if (strequals(field, "year_ending")) {
+        row->yearending = stralloc(value);
+    } else {
+        fprintf(stderr, "Unexpected field %s in period_4 table\n", field);
+        exit(EXIT_FAILURE);
+    }
 
 }
 
@@ -277,11 +375,27 @@ void populate_period_6(void* p, const char* field, const char* value) {
 
     struct plexosPeriod6* row = p;
 
+    if (strequals(field, "day_id")) {
+        row->day = atoi(value);
+    } else if (strequals(field, "datetime")) {;
+        row->datetime = stralloc(value);
+    } else {
+        fprintf(stderr, "Unexpected field %s in period_6 table\n", field);
+        exit(EXIT_FAILURE);
+    }
+
 }
 
 void populate_period_7(void* p, const char* field, const char* value) {
 
     struct plexosPeriod7* row = p;
+
+    if (strequals(field, "quarter_beginning")) {
+        row->quarterbeginning = stralloc(value);
+    } else {
+        fprintf(stderr, "Unexpected field %s in period_7 table\n", field);
+        exit(EXIT_FAILURE);
+    }
 
 }
 
@@ -289,11 +403,29 @@ void populate_phase_2(void* p, const char* field, const char* value) {
 
     struct plexosPhase2* row = p;
 
+    if (strequals(field, "period_id")) {
+        row->period = atoi(value);
+    } else if (strequals(field, "interval_id")) {;
+        row->interval.idx = atoi(value);
+    } else {
+        fprintf(stderr, "Unexpected field %s in phase_2 table\n", field);
+        exit(EXIT_FAILURE);
+    }
+
 }
 
 void populate_phase_3(void* p, const char* field, const char* value) {
 
     struct plexosPhase3* row = p;
+
+    if (strequals(field, "period_id")) {
+        row->period = atoi(value);
+    } else if (strequals(field, "interval_id")) {;
+        row->interval.idx = atoi(value);
+    } else {
+        fprintf(stderr, "Unexpected field %s in phase_3 table\n", field);
+        exit(EXIT_FAILURE);
+    }
 
 }
 
@@ -301,17 +433,62 @@ void populate_phase_4(void* p, const char* field, const char* value) {
 
     struct plexosPhase4* row = p;
 
+    if (strequals(field, "period_id")) {
+        row->period = atoi(value);
+    } else if (strequals(field, "interval_id")) {;
+        row->interval.idx = atoi(value);
+    } else {
+        fprintf(stderr, "Unexpected field %s in phase_4 table\n", field);
+        exit(EXIT_FAILURE);
+    }
+
 }
 
 void populate_key(void* p, const char* field, const char* value) {
 
     struct plexosKey* row = p;
 
+    if (strequals(field, "phase_id")) {
+        row->phase = atoi(value);
+    } else if (strequals(field, "period_type_id")) {
+        row->periodtype = atoi(value);
+    } else if (strequals(field, "band_id")) {
+        row->band = atoi(value);
+    } else if (strequals(field, "membership_id")) {;
+        row->membership.idx = atoi(value);
+    } else if (strequals(field, "model_id")) {;
+        row->model.idx = atoi(value);
+    } else if (strequals(field, "property_id")) {;
+        row->property.idx = atoi(value);
+    } else if (strequals(field, "sample_id")) {;
+        row->sample.idx = atoi(value);
+    } else if (strequals(field, "timeslice_id")) {;
+        row->timeslice.idx = atoi(value);
+    } else {
+        fprintf(stderr, "Unexpected field %s in key table\n", field);
+        exit(EXIT_FAILURE);
+    }
+
 }
 
 void populate_key_index(void* p, const char* field, const char* value) {
 
     struct plexosKeyIndex* row = p;
+
+    if (strequals(field, "period_type_id")) {
+        row->periodtype = atoi(value);
+    } else if (strequals(field, "position")) {
+        row->position = atoi(value);
+    } else if (strequals(field, "length")) {
+        row->length = atoi(value);
+    } else if (strequals(field, "period_offset")) {
+        row->periodoffset = atoi(value);
+    } else if (strequals(field, "key_id")) {;
+        row->key.idx = atoi(value);
+    } else {
+        fprintf(stderr, "Unexpected field %s in key_index table\n", field);
+        exit(EXIT_FAILURE);
+    }
 
 }
 

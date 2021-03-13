@@ -211,6 +211,7 @@ static void XMLCALL data_start(
                             exit(EXIT_FAILURE);
                         }
                         state.row_data = malloc(state.table->rowsize);
+                        memset(state.row_data, 0, state.table->rowsize);
                         break;
 
         case rowData:   state.save_text = true;
@@ -253,6 +254,7 @@ static void XMLCALL data_end(void* data, const XML_Char* el) {
 
         printf("  %s = %s\n", el, state.row_value);
 
+        // TODO: need to store implicit-index table row pointers in data too!
         if ((state.table->id != NULL) && (strcmp(el, state.table->id) == 0)) {
 
             size_t idx = atoi(state.row_value);

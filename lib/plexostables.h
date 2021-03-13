@@ -356,7 +356,7 @@ struct plexosKeyIndex {
     int periodtype; // period_type_id
     int position; // bytes from binary file start
     int length; // in 8-byte (64-bit float) increments
-    int periodoffet; // period_offset // temporal data offset (if any) in stored times
+    int periodoffset; // period_offset // temporal data offset (if any) in stored times
     union plexosKeyRef key; // key_id
 };
 
