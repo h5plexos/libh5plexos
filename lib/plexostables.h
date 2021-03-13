@@ -40,94 +40,195 @@ struct plexosConfig {
     char* value;
 };
 
+union plexosConfigRef {
+    struct plexosConfig* ptr;
+    size_t idx;
+};
+
+
 struct plexosUnit {
     char* value;
+    int lang;
 };
+
+union plexosUnitRef {
+    struct plexosUnit* ptr;
+    size_t idx;
+};
+
 
 struct plexosTimeslice {
     char* name;
 };
 
+union plexosTimesliceRef {
+    struct plexosTimeslice* ptr;
+    size_t idx;
+};
+
+
 struct plexosModel {
     char* name;
 };
 
+union plexosModelRef {
+    struct plexosModel* ptr;
+    size_t idx;
+};
+
+
 struct plexosBand {
 };
+
+union plexosBandRef {
+    struct plexosBand* ptr;
+    size_t idx;
+};
+
 
 struct plexosSample {
     char* name; // sample_name
 };
 
+union plexosSampleRef {
+    struct plexosSample* ptr;
+    size_t idx;
+};
+
+
 struct plexosSampleWeight {
     int phase; // phase_id
     double value;
-    struct plexosSample* sample; // sample_id
+    union plexosSampleRef sample; // sample_id
 };
+
+union plexosSampleWeightRef {
+    struct plexosSampleWeight* ptr;
+    size_t idx;
+};
+
 
 struct plexosClassGroup {
     char* name;
+    int lang;
 };
+
+union plexosClassGroupRef {
+    struct plexosClassGroup* ptr;
+    size_t idx;
+};
+
 
 struct plexosClass {
     char* name;
     int state;
-    struct plexosClassGroup* classgroup; // class_group_id
+    int lang;
+    union plexosClassGroupRef classgroup; // class_group_id
 };
+
+union plexosClassRef {
+    struct plexosClass* ptr;
+    size_t idx;
+};
+
 
 struct plexosCategory {
     char* name;
     int rank;
-    struct plexosClass* class; // class_id
+    union plexosClassRef class; // class_id
 };
+
+union plexosCategoryRef {
+    struct plexosCategory* ptr;
+    size_t idx;
+};
+
 
 struct plexosAttribute {
     char* name;
     char* description;
     int enum_; // enum_id
-    struct plexosClass* class; // class_id
+    union plexosClassRef class; // class_id
 };
+
+union plexosAttributeRef {
+    struct plexosAttribute* ptr;
+    size_t idx;
+};
+
 
 struct plexosCollection {
     char* name;
     char* complementname; // complement_name
-    struct plexosClass* parentclass; // parent_class_id
-    struct plexosClass* childclass; // child_class_id
+    int lang;
+    union plexosClassRef parentclass; // parent_class_id
+    union plexosClassRef childclass; // child_class_id
 };
+
+union plexosCollectionRef {
+    struct plexosCollection* ptr;
+    size_t idx;
+};
+
 
 struct plexosProperty {
     char* name;
     char* summaryname; // summary_name
+    int lang;
     int enum_; // enum_id
     bool ismultiband; // is_multi_band
     bool isperiod; // is_period
     bool issummary; // is_summary
-    struct plexosUnit* unit; // unit_id
-    struct plexosUnit* summaryunit; // summary_unit_id
-    struct plexosCollection* collection; // collection_id
+    union plexosUnitRef unit; // unit_id
+    union plexosUnitRef summaryunit; // summary_unit_id
+    union plexosCollectionRef collection; // collection_id
 };
+
+union plexosPropertyRef {
+    struct plexosProperty* ptr;
+    size_t idx;
+};
+
 
 struct plexosObject {
     char* name;
     int index;
     bool show;
-    struct plexosClass* class; // class_id
-    struct plexosCategory* category; // category_id
+    union plexosClassRef class; // class_id
+    union plexosCategoryRef category; // category_id
 };
 
-struct plexosMembership {
-    struct plexosClass* parentclass; // parent_class_id
-    struct plexosClass* childclass; // child_class_id
-    struct plexosCollection* collection; // collection_id
-    struct plexosObject* parentobject; // parent_object_id
-    struct plexosObject* childobject; // child_object_id
+union plexosObjectRef {
+    struct plexosObject* ptr;
+    size_t idx;
 };
+
+
+struct plexosMembership {
+    union plexosClassRef parentclass; // parent_class_id
+    union plexosClassRef childclass; // child_class_id
+    union plexosCollectionRef collection; // collection_id
+    union plexosObjectRef parentobject; // parent_object_id
+    union plexosObjectRef childobject; // child_object_id
+};
+
+union plexosMembershipRef {
+    struct plexosMembership* ptr;
+    size_t idx;
+};
+
 
 struct plexosAttributeData {
     double value;
-    struct plexosAttribute* attribute; // attribute_id
-    struct plexosObject* object; // object_id
+    union plexosAttributeRef attribute; // attribute_id
+    union plexosObjectRef object; // object_id
 };
+
+union plexosAttributeDataRef {
+    struct plexosAttributeData* ptr;
+    size_t idx;
+};
+
 
 struct plexosPeriod0 {
     int periodofday; // period_of_day
@@ -140,6 +241,11 @@ struct plexosPeriod0 {
     char* datetime;
 };
 
+union plexosPeriod0Ref {
+    struct plexosPeriod0* ptr;
+    size_t idx;
+};
+
 struct plexosPeriod1 {
     int week; // week_id
     int month; // month_id
@@ -148,16 +254,36 @@ struct plexosPeriod1 {
     char* date;
 };
 
+union plexosPeriod1Ref {
+    struct plexosPeriod1* ptr;
+    size_t idx;
+};
+
 struct plexosPeriod2 {
     char* weekending; // week_ending
+};
+
+union plexosPeriod2Ref {
+    struct plexosPeriod2* ptr;
+    size_t idx;
 };
 
 struct plexosPeriod3 {
     char* monthbeginning; // month_beginning
 };
 
+union plexosPeriod3Ref {
+    struct plexosPeriod3* ptr;
+    size_t idx;
+};
+
 struct plexosPeriod4 {
     char* yearending; // year_ending
+};
+
+union plexosPeriod4Ref {
+    struct plexosPeriod4* ptr;
+    size_t idx;
 };
 
 struct plexosPeriod6 {
@@ -165,35 +291,65 @@ struct plexosPeriod6 {
     char* datetime;
 };
 
+union plexosPeriod6Ref {
+    struct plexosPeriod6* ptr;
+    size_t idx;
+};
+
 struct plexosPeriod7 {
     char* quarterbeginning; // quarter_beginning
 };
 
+union plexosPeriod7Ref {
+    struct plexosPeriod7* ptr;
+    size_t idx;
+};
+
 struct plexosPhase2 {
     int period; // period_id
-    struct plexosPeriod0* interval; // interval_id
+    union plexosPeriod0Ref interval; // interval_id
+};
+
+union plexosPhase2Ref {
+    struct plexosPhase2* ptr;
+    size_t idx;
 };
 
 struct plexosPhase3 {
     int period; // period_id
-    struct plexosPeriod0* interval; // interval_id
+    union plexosPeriod0Ref interval; // interval_id
+};
+
+union plexosPhase3Ref {
+    struct plexosPhase3* ptr;
+    size_t idx;
 };
 
 struct plexosPhase4 {
     int period; // period_id
-    struct plexosPeriod0* interval; // interval_id
+    union plexosPeriod0Ref interval; // interval_id
+};
+
+union plexosPhase4Ref {
+    struct plexosPhase4* ptr;
+    size_t idx;
 };
 
 struct plexosKey {
     int phase; // phase_id
-    // note this periodtype is not accurate, use KeyIndex.periodtype instead
-    int periodtype; // period_type_id - 
+    // note that this is not accurate, use KeyIndex.periodtype instead
+    int periodtype; // period_type_id
     int band; // band_id
-    struct plexosMembership* membership; // membership_id
-    struct plexosModel* model; // model_id
-    struct plexosProperty* property; // property_id
-    struct plexosSample* sample; // sample_id
-    struct plexosTimeslice* timeslice; //timeslice_id
+    union plexosMembershipRef membership; // membership_id
+    union plexosModelRef model; // model_id
+    union plexosPropertyRef property; // property_id
+    union plexosSampleRef sample; // sample_id
+    union plexosTimesliceRef timeslice; //timeslice_id
+};
+
+union plexosKeyRef {
+    struct plexosKey* ptr;
+    size_t idx;
 };
 
 struct plexosKeyIndex {
@@ -201,53 +357,56 @@ struct plexosKeyIndex {
     int position; // bytes from binary file start
     int length; // in 8-byte (64-bit float) increments
     int periodoffet; // period_offset // temporal data offset (if any) in stored times
-    struct plexosKey* key; // key_id
+    union plexosKeyRef key; // key_id
 };
 
-/*void populate_x(void* row, plexosTableIdx table,
-              const char* fieldname, const char* value); */
-
+union plexosKeyIndexRef {
+    struct plexosKeyIndex* ptr;
+    size_t idx;
+};
 
 struct plexosData {
 
-    struct plexosConfig* configs;
-    struct plexosUnit* units;
-    struct plexosTimeslice* timeslices;
-    struct plexosModel* models;
-    struct plexosBand* bands;
+    struct plexosConfig** configs;
+    struct plexosUnit** units;
+    struct plexosTimeslice** timeslices;
+    struct plexosModel** models;
+    struct plexosBand** bands;
 
-    struct plexosSample* samples;
-    struct plexosSampleWeight* sampleweights;
+    struct plexosSample** samples;
+    struct plexosSampleWeight** sampleweights;
 
-    struct plexosClassGroup* classgroups;
-    struct plexosClass* classes;
-    struct plexosCategory* categories;
+    struct plexosClassGroup** classgroups;
+    struct plexosClass** classes;
+    struct plexosCategory** categories;
 
-    struct plexosAttribute* attributes;
-    struct plexosCollection* collections;
-    struct plexosProperty* properties;
+    struct plexosAttribute** attributes;
+    struct plexosCollection** collections;
+    struct plexosProperty** properties;
 
-    struct plexosObject* objects;
-    struct plexosMembership* memberships;
-    struct plexosAttributeData* attributedata;
+    struct plexosObject** objects;
+    struct plexosMembership** memberships;
+    struct plexosAttributeData** attributedata;
 
-    struct plexosPeriod0* intervals;
-    struct plexosPeriod1* days;
-    struct plexosPeriod2* weeks;
-    struct plexosPeriod3* months;
-    struct plexosPeriod4* years;
-    struct plexosPeriod6* hours;
-    struct plexosPeriod7* quarters;
+    struct plexosPeriod0** intervals;
+    struct plexosPeriod1** days;
+    struct plexosPeriod2** weeks;
+    struct plexosPeriod3** months;
+    struct plexosPeriod4** years;
+    struct plexosPeriod6** hours;
+    struct plexosPeriod7** quarters;
 
-    struct plexosPhase2* pasa;
-    struct plexosPhase3* mt;
-    struct plexosPhase4* st;
+    struct plexosPhase2** pasa;
+    struct plexosPhase3** mt;
+    struct plexosPhase4** st;
 
-    struct plexosKey* keys;
-    struct plexosKeyIndex* keyindices;
+    struct plexosKey** keys;
+    struct plexosKeyIndex** keyindices;
 
 };
 
 struct plexosData data;
+
+void init_data();
 
 #endif // plexostables_h_INCLUDED

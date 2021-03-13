@@ -19,9 +19,7 @@ struct parserState {
     int depth;
     struct plexosTable* table;
 
-    bool idxField;
-    char row_field[XMLMAXTEXTLENGTH + 1];
-
+    bool save_text;
     char row_value[XMLMAXTEXTLENGTH + 1];
     size_t row_value_length;
 
@@ -29,7 +27,11 @@ struct parserState {
 
 };
 
-struct parserState state = {};
+struct parserState state;
+
+void reset_state() {
+    memset(&state, 0, sizeof(struct parserState));
+}
 
 void parse(zip_t* archive, int* err, zip_int64_t xml_idx, struct parseSpec spec) {
 
@@ -50,10 +52,12 @@ void parse(zip_t* archive, int* err, zip_int64_t xml_idx, struct parseSpec spec)
     char buf[XMLBUFFERSIZE];
     bool done = false;
     int n;
+    reset_state();
 
     while (!done) {
 
         n = zip_fread(xml, buf, XMLBUFFERSIZE);
+        printf("Read %d bytes\n", n);
 
         if (n <= 0) {
             done = true;
@@ -67,13 +71,16 @@ void parse(zip_t* archive, int* err, zip_int64_t xml_idx, struct parseSpec spec)
         }
 
     }
-    XML_ParserFree(p);
+    puts("Freeing parser...");
+    XML_ParserFree(p); // TODO: "double free or corruption (out)"
+    puts("Finished parse");
 
     int ferr = zip_fclose(xml);
     if (ferr != 0) {
         fprintf(stderr, "Error %d occured when closing internal XML file.\n", ferr);
         return;
     }
+    puts("Closed XML file");
 
 }
 
@@ -88,7 +95,7 @@ static void XMLCALL summary_start(void* data, const XML_Char* el, const XML_Char
                             fprintf(stderr, 
                                     "Unrecognized PLEXOS XML data format "
                                     "(root tag is not SolutionDataset)\n");
-                            exit(-1);
+                            exit(EXIT_FAILURE);
                         }
                         break;
 
@@ -96,7 +103,7 @@ static void XMLCALL summary_start(void* data, const XML_Char* el, const XML_Char
 
                         if (state.table == NULL) {
                             fprintf(stderr, "Error parsing row in %s\n", el);
-                            exit(-1);
+                            exit(EXIT_FAILURE);
                         }
 
                         if (state.table->count == 0) {
@@ -112,7 +119,7 @@ static void XMLCALL summary_start(void* data, const XML_Char* el, const XML_Char
                         break;
 
         case rowData:   if (state.table->id != NULL) {
-                            state.idxField =
+                            state.save_text =
                                 (strcmp(el, state.table->id) == 0);
                         }
                         break;
@@ -130,13 +137,7 @@ static void XMLCALL summary_start(void* data, const XML_Char* el, const XML_Char
 
 static void XMLCALL summary_text(void* data, const XML_Char* s, int n) {
 
-/*    if (state.depth != rowData) {
-        fprintf(stderr, "Unrecognized PLEXOS XML data format "
-                        "(text data outside level %d of tags)\n", rowData);
-        exit(EXIT_FAILURE);
-    }*/
-
-    if (state.idxField) {
+    if (state.save_text) {
 
         state.row_value_length += n;
 
@@ -158,7 +159,7 @@ static void XMLCALL summary_end(void* data, const XML_Char* el) {
     (void)data;
     (void)el;
 
-    if (state.idxField) {
+    if (state.save_text) {
 
         int idx = atoi(state.row_value);
 
@@ -170,7 +171,7 @@ static void XMLCALL summary_end(void* data, const XML_Char* el) {
             state.table->max_idx = idx;
         }
 
-        state.idxField = false;
+        state.save_text = false;
         state.row_value[0] = '\0';
         state.row_value_length = 0;
 
@@ -194,7 +195,8 @@ static void XMLCALL data_start(
 
     switch (state.depth) {
 
-        case root:      if (strcmp(el, "SolutionDataset") != 0) {
+        case root:      printf("%s\n", el);
+                        if (strcmp(el, "SolutionDataset") != 0) {
                             fprintf(stderr, 
                                     "Unrecognized PLEXOS XML data format "
                                     "(root tag is not SolutionDataset)\n");
@@ -202,27 +204,16 @@ static void XMLCALL data_start(
                         }
                         break;
 
-        case row:       state.table = get_plexostable(el);
-
+        case row:       printf(" %s\n", el);
+                        state.table = get_plexostable(el);
                         if (state.table == NULL) {
                             fprintf(stderr, "Error parsing row in %s\n", el);
                             exit(EXIT_FAILURE);
                         }
-
                         state.row_data = malloc(state.table->rowsize);
-
                         break;
 
-        case rowData:   if (strlen(el) <= XMLMAXTEXTLENGTH) {
-                            strcpy(state.row_field, el);
-                        } else {
-                            fprintf(stderr,
-                                "Encountered a PLEXOS entity field longer than "
-                                "%d characters: %s'",
-                                XMLMAXTEXTLENGTH, el);
-                            exit(EXIT_FAILURE);
-                        }
-
+        case rowData:   state.save_text = true;
                         break;
 
         default:        fprintf(stderr,
@@ -237,17 +228,20 @@ static void XMLCALL data_start(
 }
 
 static void XMLCALL data_text(void* data, const XML_Char* s, int n) {
-    switch (state.depth) {
 
-        case rowData:   // TODO: concat into holding string
+    if (state.save_text) {
 
-                        break;
+        state.row_value_length += n;
 
-/*        default:        fprintf(stderr,
-                                "Unrecognized PLEXOS XML data format "
-                                "(text data outside level %d of tags)\n",
-                                rowData);
-                        exit(EXIT_FAILURE);*/
+        if (state.row_value_length > XMLMAXTEXTLENGTH) {
+            fprintf(stderr,
+                    "Encountered a PLEXOS entity field value longer than "
+                    "%d characters: '%s%.*s'",
+                    XMLMAXTEXTLENGTH, state.row_value, n, s);
+            exit(EXIT_FAILURE);
+        }
+
+        strncat(state.row_value, s, n);
 
     }
 
@@ -255,19 +249,34 @@ static void XMLCALL data_text(void* data, const XML_Char* s, int n) {
 
 static void XMLCALL data_end(void* data, const XML_Char* el) {
 
-    if (strlen(state.row_field) > 0) {
+    if (state.save_text) {
 
-        if (state.row_field == state.table->id) {
+        printf("  %s = %s\n", el, state.row_value);
+
+        if ((state.table->id != NULL) && (strcmp(el, state.table->id) == 0)) {
+
             size_t idx = atoi(state.row_value);
+
+            if (!state.table->zeroindexed) {
+                idx--;
+            }
+
             (*(state.table->rows))[idx] = state.row_data;
+
         } else {
+
             (state.table->populator)(
-                state.row_data, state.row_field, state.row_value);
+                state.row_data, el, state.row_value);
+
         }
 
+        state.save_text = false;
         state.row_value[0] = '\0';
+        state.row_value_length = 0;
 
     }
+
+    state.depth--;
 
 }
 

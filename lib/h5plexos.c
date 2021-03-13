@@ -24,10 +24,7 @@ void h5plexos(const char* infile, const char* outfile) {
     }
 
     parse(archive, &err, xml_idx, summary_pass);
-    // parse(archive, xml_idx, data_pass);
-    zip_discard(archive);
 
-    // Now do things with [summary] data
     printf("Count\tMax Idx\tTable\n");
     printf("=====\t=======\t=====\n");
     for (int i = 0; i < n_plexostables; i++) {
@@ -35,7 +32,14 @@ void h5plexos(const char* infile, const char* outfile) {
                tables[i].count, tables[i].max_idx, tables[i].name);
     }
 
-    // Set up pointers to index values (need to cast placeholder pointers to ints)
+    init_data();
+    parse(archive, &err, xml_idx, data_pass);
+
+    // Now do things with data
+
+    zip_discard(archive);
+
+
     // Consolidate data (eliminate gaps between elements then reallocarray)
     // Create and populate HDF5 file
 
