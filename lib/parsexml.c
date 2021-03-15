@@ -195,7 +195,7 @@ static void XMLCALL data_start(
 
     switch (state.depth) {
 
-        case root:      //printf("%s\n", el);
+        case root:      // printf("%s\n", el);
                         if (strcmp(el, "SolutionDataset") != 0) {
                             fprintf(stderr, 
                                     "Unrecognized PLEXOS XML data format "
@@ -204,7 +204,7 @@ static void XMLCALL data_start(
                         }
                         break;
 
-        case row:       //printf(" %s\n", el);
+        case row:       // printf(" %s\n", el);
                         state.table = get_plexostable(el);
                         if (state.table == NULL) {
                             fprintf(stderr, "Error parsing row in %s\n", el);
@@ -212,6 +212,10 @@ static void XMLCALL data_start(
                         }
                         state.row_data = malloc(state.table->rowsize);
                         memset(state.row_data, 0, state.table->rowsize);
+                        if (state.table->id == NULL) {
+                            (*(state.table->rows))[state.table->nextidx] = state.row_data;
+                            state.table->nextidx++;
+                        }
                         break;
 
         case rowData:   state.save_text = true;
@@ -252,9 +256,8 @@ static void XMLCALL data_end(void* data, const XML_Char* el) {
 
     if (state.save_text) {
 
-        //printf("  %s = %s\n", el, state.text);
+        // printf("  %s = %s\n", el, state.text);
 
-        // TODO: need to store implicit-index table row pointers in data too!
         if ((state.table->id != NULL) && (strcmp(el, state.table->id) == 0)) {
 
             size_t idx = atoi(state.text);

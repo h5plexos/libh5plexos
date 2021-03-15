@@ -15,14 +15,14 @@ typedef void populate_function(void* row, const char* field, const char* value);
 
 struct plexosTable {
 
-    int idx;
     char* name;
     char* id;
     bool zeroindexed;
 
-    int count;
+    size_t count;
     int max_idx;
 
+    size_t nextidx;
     size_t rowsize;
     populate_function* populator;
     void*** rows;
