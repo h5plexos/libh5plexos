@@ -12,6 +12,7 @@ enum plexosTableIdx {
 };
 
 typedef void populate_function(void* row, const char* field, const char* value);
+typedef void link_function(void* row);
 
 struct plexosTable {
 
@@ -25,6 +26,7 @@ struct plexosTable {
     size_t nextidx;
     size_t rowsize;
     populate_function* populator;
+    link_function* linker;
     void*** rows;
 
 };
@@ -408,5 +410,6 @@ struct plexosData {
 struct plexosData data;
 
 void init_data();
+void link_data();
 
 #endif // plexostables_h_INCLUDED

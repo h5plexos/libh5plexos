@@ -32,8 +32,11 @@ void h5plexos(const char* infile, const char* outfile) {
                tables[i].count, tables[i].max_idx, tables[i].name);
     }
 
+    // libray invocations may init multiple times, reset_data instead?
+    // also reset tables and parser state?
     init_data();
-    parse(archive, &err, xml_idx, data_pass);
+    parse(archive, &err, xml_idx, populate_pass);
+    link_data();
 
     // Now do things with data
 

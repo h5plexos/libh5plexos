@@ -19,6 +19,22 @@ char* stralloc(const char* x) {
     return p;
 }
 
+void* idx2ptr(size_t idx, int table_idx) {
+
+    struct plexosTable table = tables[table_idx];
+    void* p = NULL;
+
+    if (idx <= table.max_idx) {
+        p = *(table.rows)[idx];
+    }
+
+    return p;
+
+}
+
+
+void link_noop(void* p) {}
+
 void populate_config(void* p, const char* field, const char* value) {
 
     struct plexosConfig* row = p;
@@ -108,6 +124,11 @@ void populate_sample_weight(void* p, const char* field, const char* value) {
     }
 }
 
+void link_sample_weight(void* p) {
+    struct plexosSampleWeight* row = p;
+    row->sample.ptr = idx2ptr(row->sample.idx, sample);
+}
+
 void populate_class_group(void* p, const char* field, const char* value) {
 
     struct plexosClassGroup* row = p;
@@ -140,6 +161,11 @@ void populate_class(void* p, const char* field, const char* value) {
     }
 }
 
+void link_class(void* p) {
+    struct plexosClass* row = p;
+    row->classgroup.ptr = idx2ptr(row->classgroup.idx, class_group);
+}
+
 void populate_category(void* p, const char* field, const char* value) {
 
     struct plexosCategory* row = p;
@@ -154,6 +180,11 @@ void populate_category(void* p, const char* field, const char* value) {
         fprintf(stderr, "Unexpected field %s in category table\n", field);
         exit(EXIT_FAILURE);
     }
+}
+
+void link_category(void* p) {
+    struct plexosCategory* row = p;
+    row->class.ptr = idx2ptr(row->class.idx, class);
 }
 
 void populate_attribute(void* p, const char* field, const char* value) {
@@ -174,6 +205,11 @@ void populate_attribute(void* p, const char* field, const char* value) {
     }
 }
 
+void link_attribute(void* p) {
+    struct plexosAttribute* row = p;
+    row->class.ptr = idx2ptr(row->class.idx, class);
+}
+
 void populate_collection(void* p, const char* field, const char* value) {
 
     struct plexosCollection* row = p;
@@ -192,6 +228,12 @@ void populate_collection(void* p, const char* field, const char* value) {
         fprintf(stderr, "Unexpected field %s in collection table\n", field);
         exit(EXIT_FAILURE);
     }
+}
+
+void link_collection(void* p) {
+    struct plexosCollection* row = p;
+    row->parentclass.ptr = idx2ptr(row->parentclass.idx, class);
+    row->childclass.ptr = idx2ptr(row->childclass.idx, class);
 }
 
 void populate_property(void* p, const char* field, const char* value) {
@@ -225,6 +267,13 @@ void populate_property(void* p, const char* field, const char* value) {
 
 }
 
+void link_property(void* p) {
+    struct plexosProperty* row = p;
+    row->unit.ptr = idx2ptr(row->unit.idx, unit);
+    row->summaryunit.ptr = idx2ptr(row->unit.idx, unit);
+    row->collection.ptr = idx2ptr(row->collection.idx, collection);
+}
+
 void populate_object(void* p, const char* field, const char* value) {
 
     struct plexosObject* row = p;
@@ -244,6 +293,12 @@ void populate_object(void* p, const char* field, const char* value) {
         exit(EXIT_FAILURE);
     }
 
+}
+
+void link_object(void* p) {
+    struct plexosObject* row = p;
+    row->class.ptr = idx2ptr(row->class.idx, class);
+    row->category.ptr = idx2ptr(row->category.idx, category);
 }
 
 void populate_membership(void* p, const char* field, const char* value) {
@@ -267,6 +322,15 @@ void populate_membership(void* p, const char* field, const char* value) {
 
 }
 
+void link_membership(void* p) {
+    struct plexosMembership* row = p;
+    row->parentclass.ptr = idx2ptr(row->parentclass.idx, class);
+    row->childclass.ptr = idx2ptr(row->childclass.idx, class);
+    row->collection.ptr = idx2ptr(row->collection.idx, collection);
+    row->parentobject.ptr = idx2ptr(row->parentobject.idx, object);
+    row->childobject.ptr = idx2ptr(row->childobject.idx, object);
+}
+
 void populate_attribute_data(void* p, const char* field, const char* value) {
 
     struct plexosAttributeData* row = p;
@@ -282,6 +346,12 @@ void populate_attribute_data(void* p, const char* field, const char* value) {
         exit(EXIT_FAILURE);
     }
 
+}
+
+void link_attribute_data(void* p) {
+    struct plexosAttributeData* row = p;
+    row->attribute.ptr = idx2ptr(row->attribute.idx, attribute);
+    row->object.ptr = idx2ptr(row->object.idx, object);
 }
 
 void populate_period_0(void* p, const char* field, const char* value) {
@@ -414,6 +484,11 @@ void populate_phase_2(void* p, const char* field, const char* value) {
 
 }
 
+void link_phase_2(void* p) {
+    struct plexosPhase2* row = p;
+    row->interval.ptr = idx2ptr(row->interval.idx, period_0);
+}
+
 void populate_phase_3(void* p, const char* field, const char* value) {
 
     struct plexosPhase3* row = p;
@@ -429,6 +504,11 @@ void populate_phase_3(void* p, const char* field, const char* value) {
 
 }
 
+void link_phase_3(void* p) {
+    struct plexosPhase3* row = p;
+    row->interval.ptr = idx2ptr(row->interval.idx, period_0);
+}
+
 void populate_phase_4(void* p, const char* field, const char* value) {
 
     struct plexosPhase4* row = p;
@@ -442,6 +522,11 @@ void populate_phase_4(void* p, const char* field, const char* value) {
         exit(EXIT_FAILURE);
     }
 
+}
+
+void link_phase_4(void* p) {
+    struct plexosPhase4* row = p;
+    row->interval.ptr = idx2ptr(row->interval.idx, period_0);
 }
 
 void populate_key(void* p, const char* field, const char* value) {
@@ -471,6 +556,15 @@ void populate_key(void* p, const char* field, const char* value) {
 
 }
 
+void link_key(void* p) {
+    struct plexosKey* row = p;
+    row->membership.ptr = idx2ptr(row->membership.idx, membership);
+    row->model.ptr = idx2ptr(row->model.idx, model);
+    row->property.ptr = idx2ptr(row->property.idx, property);
+    row->sample.ptr = idx2ptr(row->sample.idx, sample);
+    row->timeslice.ptr = idx2ptr(row->timeslice.idx, timeslice);
+}
+
 void populate_key_index(void* p, const char* field, const char* value) {
 
     struct plexosKeyIndex* row = p;
@@ -492,12 +586,18 @@ void populate_key_index(void* p, const char* field, const char* value) {
 
 }
 
+void link_key_index(void* p) {
+    struct plexosKeyIndex* row = p;
+    row->key.ptr = idx2ptr(row->key.idx, key);
+}
+
 struct plexosData data = {0};
 
 struct plexosTable tables[n_plexostables] = {
 
     [config] = {.name = "t_config",
                 .populator = populate_config,
+                .linker = link_noop,
                 .rows = (void***) &data.configs,
                 .rowsize = sizeof(struct plexosConfig)},
 
@@ -505,6 +605,7 @@ struct plexosTable tables[n_plexostables] = {
               .id = "unit_id",
               .zeroindexed = true,
               .populator = populate_unit,
+              .linker = link_noop,
               .rows = (void***) &data.units,
               .rowsize = sizeof(struct plexosUnit)},
 
@@ -512,151 +613,177 @@ struct plexosTable tables[n_plexostables] = {
                    .id = "timeslice_id",
                    .zeroindexed = true,
                    .populator = populate_timeslice,
+                   .linker = link_noop,
                    .rows = (void***) &data.timeslices,
                    .rowsize = sizeof(struct plexosTimeslice)},
 
     [model] = {.name = "t_model",
                .id = "model_id",
                .populator = populate_model,
+               .linker = link_noop,
                .rows = (void***) &data.models,
                .rowsize = sizeof(struct plexosModel)},
 
     [band] = {.name = "t_band",
               .id = "band_id",
               .populator = populate_band,
+              .linker = link_noop,
               .rows = (void***) &data.bands,
               .rowsize = sizeof(struct plexosBand)},
 
     [sample] = {.name = "t_sample",
                 .id = "sample_id",
                 .zeroindexed = true,
+                .linker = link_noop,
                 .populator = populate_sample,
                 .rows = (void***) &data.samples,
                 .rowsize = sizeof(struct plexosSample)},
 
     [sample_weight] = {.name = "t_sample_weight",
                        .populator = populate_sample_weight,
+                       .linker = link_sample_weight,
                        .rows = (void***) &data.sampleweights,
                        .rowsize = sizeof(struct plexosSampleWeight)},
 
     [class_group] = {.name= "t_class_group",
                      .id = "class_group_id",
                      .populator = populate_class_group,
+                     .linker = link_noop,
                      .rows = (void***) &data.classgroups,
                      .rowsize = sizeof(struct plexosClassGroup)},
 
     [class] = {.name = "t_class",
                .id = "class_id",
                .populator = populate_class,
+               .linker = link_class,
                .rows = (void***) &data.classes,
                .rowsize = sizeof(struct plexosClass)},
 
     [category] = {.name = "t_category",
                   .id = "category_id",
                   .populator = populate_category,
+                  .linker = link_category,
                   .rows = (void***) &data.categories,
                   .rowsize = sizeof(struct plexosCategory)},
 
     [attribute] = {.name = "t_attribute",
                    .id = "attribute_id",
                    .populator = populate_attribute,
+                   .linker = link_attribute,
                    .rows = (void***) &data.attributes,
                    .rowsize = sizeof(struct plexosAttribute)},
 
     [collection] = {.name = "t_collection",
                     .id = "collection_id",
                     .populator = populate_collection,
+                    .linker = link_collection,
                     .rows = (void***) &data.collections,
                     .rowsize = sizeof(struct plexosCollection)},
 
     [property] = {.name = "t_property",
                   .id = "property_id",
                   .populator = populate_property,
+                  .linker = link_property,
                   .rows = (void***) &data.properties,
                   .rowsize = sizeof(struct plexosProperty)},
 
     [object] = {.name = "t_object",
                 .id = "object_id",
                 .populator = populate_object,
+                .linker = link_object,
                 .rows = (void***) &data.objects,
                 .rowsize = sizeof(struct plexosObject)},
 
     [membership] = {.name = "t_membership",
                     .id = "membership_id",
                     .populator = populate_membership,
+                    .linker = link_membership,
                     .rows = (void***) &data.memberships,
                     .rowsize = sizeof(struct plexosMembership)},
 
     [attribute_data] = {.name = "t_attribute_data",
                         .populator = populate_attribute_data,
+                        .linker = link_attribute_data,
                         .rows = (void***) &data.attributedata,
                         .rowsize = sizeof(struct plexosAttributeData)},
 
     [period_0] = {.name = "t_period_0",
                   .id = "interval_id",
                   .populator = populate_period_0,
+                  .linker = link_noop,
                   .rows = (void***) &data.intervals,
                   .rowsize = sizeof(struct plexosPeriod0)},
 
     [period_1] = {.name = "t_period_1",
                   .id = "day_id",
                   .populator = populate_period_1,
+                  .linker = link_noop,
                   .rows = (void***) &data.days,
                   .rowsize = sizeof(struct plexosPeriod1)},
 
     [period_2] = {.name = "t_period_2",
                   .id = "week_id",
                   .populator = populate_period_2,
+                  .linker = link_noop,
                   .rows = (void***) &data.weeks,
                   .rowsize = sizeof(struct plexosPeriod2)},
 
     [period_3] = {.name = "t_period_3",
                   .id = "month_id",
                   .populator = populate_period_3,
+                  .linker = link_noop,
                   .rows = (void***) &data.months,
                   .rowsize = sizeof(struct plexosPeriod3)},
 
     [period_4] = {.name = "t_period_4",
                   .id = "fiscal_year_id",
                   .populator = populate_period_4,
+                  .linker = link_noop,
                   .rows = (void***) &data.years,
                   .rowsize = sizeof(struct plexosPeriod4)},
 
     [period_6] = {.name = "t_period_6",
                   .id = "hour_id",
                   .populator = populate_period_6,
+                  .linker = link_noop,
                   .rows = (void***) &data.hours,
                   .rowsize = sizeof(struct plexosPeriod6)},
 
     [period_7] = {.name = "t_period_7",
                   .id = "quarter_id",
                   .populator = populate_period_7,
+                  .linker = link_noop,
                   .rows = (void***) &data.quarters,
                   .rowsize = sizeof(struct plexosPeriod7)},
 
     [phase_2] = {.name = "t_phase_2",
                  .populator = populate_phase_2,
+                 .linker = link_phase_2,
                  .rows = (void***) &data.pasa,
                  .rowsize = sizeof(struct plexosPhase2)},
 
     [phase_3] = {.name = "t_phase_3",
                  .populator = populate_phase_3,
+                 .linker = link_phase_3,
                  .rows = (void***) &data.mt,
                  .rowsize = sizeof(struct plexosPhase3)},
 
     [phase_4] = {.name = "t_phase_4",
                  .populator = populate_phase_4,
+                 .linker = link_phase_4,
                  .rows = (void***) &data.st,
                  .rowsize = sizeof(struct plexosPhase4)},
 
     [key] = {.name = "t_key",
              .id = "key_id",
              .populator = populate_key,
+             .linker = link_key,
              .rows = (void***) &data.keys,
              .rowsize = sizeof(struct plexosKey)},
 
     [key_index] = {.name = "t_key_index",
                    .populator = populate_key_index,
+                   .linker = link_key_index,
                    .rows = (void***) &data.keyindices,
                    .rowsize = sizeof(struct plexosKeyIndex)}
 
@@ -722,5 +849,23 @@ void init_data() {
 
     data.keys = row_array(key);
     data.keyindices = row_array(key_index);
+
+}
+
+void link_data() {
+
+    for (size_t t = 0; t++; t < n_plexostables) {
+
+        void*** rows = tables[t].rows;
+
+        for (size_t i = 0; i++; i <= tables[t].max_idx) {
+
+            if (rows[i] != NULL) {
+                tables[t].linker(rows[i]);
+            }
+
+        }
+
+    }
 
 }

@@ -285,7 +285,7 @@ static void XMLCALL data_end(void* data, const XML_Char* el) {
 
 }
 
-struct parseSpec data_pass = {
+struct parseSpec populate_pass = {
     .start = data_start,
     .text = data_text,
     .end = data_end,
