@@ -5,6 +5,7 @@
 
 #include "plexostables.h"
 #include "parsexml.h"
+#include "makehdf5.h"
 
 void h5plexos(const char* infile, const char* outfile) {
 
@@ -36,15 +37,9 @@ void h5plexos(const char* infile, const char* outfile) {
     // also reset tables and parser state?
     init_data();
     parse(archive, &err, xml_idx, populate_pass);
-    link_data();
-
-    // Now do things with data
-
+    finalize_data();
+    create_hdf5(archive, &err, outfile);
     zip_discard(archive);
-
-
-    // Consolidate data (eliminate gaps between elements then reallocarray)
-    // Create and populate HDF5 file
 
     return;
 

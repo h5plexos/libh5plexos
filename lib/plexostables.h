@@ -212,6 +212,8 @@ struct plexosMembership {
     union plexosCollectionRef collection; // collection_id
     union plexosObjectRef parentobject; // parent_object_id
     union plexosObjectRef childobject; // child_object_id
+    size_t collection_idx;
+    size_t collection_membership_idx;
 };
 
 union plexosMembershipRef {
@@ -410,6 +412,6 @@ struct plexosData {
 struct plexosData data;
 
 void init_data();
-void link_data();
+void finalize_data();
 
 #endif // plexostables_h_INCLUDED

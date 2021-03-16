@@ -26,6 +26,8 @@ void* idx2ptr(size_t idx, int table_idx) {
 
     if (idx <= table.max_idx) {
         p = *(table.rows)[idx];
+    } else {
+        fprintf(stderr, "%s index %d not available", table.name, idx);
     }
 
     return p;
@@ -794,7 +796,7 @@ struct plexosTable* get_plexostable(const char* tablename) {
 
     struct plexosTable* ptr = NULL;
 
-    for (int i = 0; i < n_plexostables; i++) {
+    for (size_t i = 0; i < n_plexostables; i++) {
         if (strcmp(tablename, tables[i].name) == 0) {
             ptr = &(tables[i]);
             break;
@@ -852,16 +854,34 @@ void init_data() {
 
 }
 
-void link_data() {
+void finalize_data() {
 
-    for (size_t t = 0; t++; t < n_plexostables) {
+    // Link up data structures
+    for (size_t t = 0; t < n_plexostables; t++) {
 
-        void*** rows = tables[t].rows;
+        void** rows = *(tables[t].rows);
 
         for (size_t i = 0; i++; i <= tables[t].max_idx) {
 
             if (rows[i] != NULL) {
                 tables[t].linker(rows[i]);
+            }
+
+        }
+
+    }
+
+    // Consolidate data arrays
+    for (size_t t = 0; t < n_plexostables; t++) {
+
+        void** rows = *(tables[t].rows);
+        size_t next_dense = 0;
+
+        for (size_t i = 0; i <= tables[t].max_idx; i++) {
+
+            if (rows[i] != NULL) {
+                rows[next_dense] = rows[i];
+                next_dense++;
             }
 
         }
