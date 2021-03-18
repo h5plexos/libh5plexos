@@ -163,10 +163,6 @@ static void XMLCALL summary_end(void* data, const XML_Char* el) {
 
         int idx = atoi(state.text);
 
-        if (!state.table->zeroindexed) {
-            idx--;
-        }
-
         if (idx > state.table->max_idx) {
             state.table->max_idx = idx;
         }
@@ -261,10 +257,6 @@ static void XMLCALL data_end(void* data, const XML_Char* el) {
         if ((state.table->id != NULL) && (strcmp(el, state.table->id) == 0)) {
 
             size_t idx = atoi(state.text);
-
-            if (!state.table->zeroindexed) {
-                idx--;
-            }
 
             (*(state.table->rows))[idx] = state.row_data;
 

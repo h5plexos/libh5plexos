@@ -11,22 +11,33 @@ enum plexosTableIdx {
     phase_2, phase_3, phase_4, key, key_index, n_plexostables
 };
 
+enum plexosPeriodIdx {
+    _period_0, _period_1, _period_2, _period_3, _period_4, _period_6, _period_7,
+    n_plexosperiods
+};
+
+int period_tables[n_plexosperiods];
+
 typedef void populate_function(void* row, const char* field, const char* value);
 typedef void link_function(void* row);
+typedef void timestamp_function(char* timestamp, void* row, const char* localformat);
 
 struct plexosTable {
 
     char* name;
     char* id;
-    bool zeroindexed;
+    char* h5name;
 
     size_t count;
     int max_idx;
 
     size_t nextidx;
     size_t rowsize;
+
     populate_function* populator;
     link_function* linker;
+    timestamp_function* puttimestamp;
+
     void*** rows;
 
 };
@@ -212,6 +223,7 @@ struct plexosMembership {
     union plexosCollectionRef collection; // collection_id
     union plexosObjectRef parentobject; // parent_object_id
     union plexosObjectRef childobject; // child_object_id
+    // Should these be stored elsewhere?
     size_t collection_idx;
     size_t collection_membership_idx;
 };

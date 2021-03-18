@@ -3,7 +3,14 @@
 #include <stdbool.h>
 #include <string.h>
 
+#define _XOPEN_SOURCE // using strptime, so won't be portable to Windows
+#include <time.h>
+
 #include "plexostables.h"
+
+#define STDTIMEFORMAT "%FT%T"
+
+struct tm temptime = {};
 
 bool strequals(const char* x, const char* y) {
     return strcmp(x, y) == 0;
@@ -24,12 +31,18 @@ void* idx2ptr(size_t idx, int table_idx) {
     struct plexosTable table = tables[table_idx];
     void* p = NULL;
 
+    //printf("%s idx:\t%d\n", table.name, idx);
+
     if (idx <= table.max_idx) {
-        p = *(table.rows)[idx];
-    } else {
-        fprintf(stderr, "%s index %d not available", table.name, idx);
+        p = (*(table.rows))[idx];
     }
 
+    if (idx > table.max_idx || p == NULL) {
+        fprintf(stderr, "%s index %u not available\n", table.name, idx);
+    }
+
+    //printf("%s ptr:\t%d\n", table.name, p);
+    //printf("---\n");
     return p;
 
 }
@@ -272,7 +285,7 @@ void populate_property(void* p, const char* field, const char* value) {
 void link_property(void* p) {
     struct plexosProperty* row = p;
     row->unit.ptr = idx2ptr(row->unit.idx, unit);
-    row->summaryunit.ptr = idx2ptr(row->unit.idx, unit);
+    row->summaryunit.ptr = idx2ptr(row->summaryunit.idx, unit);
     row->collection.ptr = idx2ptr(row->collection.idx, collection);
 }
 
@@ -383,6 +396,12 @@ void populate_period_0(void* p, const char* field, const char* value) {
 
 }
 
+void puttimestamp_period_0(char* timestamp, void* p, const char* localformat) {
+    struct plexosPeriod0* row = p;
+    strptime(row->datetime, localformat, &temptime);
+    strftime(timestamp, 20, STDTIMEFORMAT, &temptime);
+}
+
 void populate_period_1(void* p, const char* field, const char* value) {
 
     struct plexosPeriod1* row = p;
@@ -403,6 +422,10 @@ void populate_period_1(void* p, const char* field, const char* value) {
     }
 
 }
+void puttimestamp_period_1(char* timestamp, void* p, const char* localformat) {
+    struct plexosPeriod1* row = p;
+    strncat(timestamp, row->date, 20);
+}
 
 void populate_period_2(void* p, const char* field, const char* value) {
 
@@ -415,6 +438,11 @@ void populate_period_2(void* p, const char* field, const char* value) {
         exit(EXIT_FAILURE);
     }
 
+}
+
+void puttimestamp_period_2(char* timestamp, void* p, const char* localtimestamp) {
+    struct plexosPeriod2* row = p;
+    strncat(timestamp, row->weekending, 20);
 }
 
 void populate_period_3(void* p, const char* field, const char* value) {
@@ -430,6 +458,11 @@ void populate_period_3(void* p, const char* field, const char* value) {
 
 }
 
+void puttimestamp_period_3(char* timestamp, void* p, const char* localtimestamp) {
+    struct plexosPeriod3* row = p;
+    strncat(timestamp, row->monthbeginning, 20);
+}
+
 void populate_period_4(void* p, const char* field, const char* value) {
 
     struct plexosPeriod4* row = p;
@@ -441,6 +474,11 @@ void populate_period_4(void* p, const char* field, const char* value) {
         exit(EXIT_FAILURE);
     }
 
+}
+
+void puttimestamp_period_4(char* timestamp, void* p, const char* localtimestamp) {
+    struct plexosPeriod4* row = p;
+    strncat(timestamp, row->yearending, 20);
 }
 
 void populate_period_6(void* p, const char* field, const char* value) {
@@ -458,6 +496,12 @@ void populate_period_6(void* p, const char* field, const char* value) {
 
 }
 
+void puttimestamp_period_6(char* timestamp, void* p, const char* localformat) {
+    struct plexosPeriod6* row = p;
+    strptime(row->datetime, localformat, &temptime);
+    strftime(timestamp, 20, STDTIMEFORMAT, &temptime);
+}
+
 void populate_period_7(void* p, const char* field, const char* value) {
 
     struct plexosPeriod7* row = p;
@@ -469,6 +513,11 @@ void populate_period_7(void* p, const char* field, const char* value) {
         exit(EXIT_FAILURE);
     }
 
+}
+
+void puttimestamp_period_7(char* timestamp, void* p, const char* localtimestamp) {
+    struct plexosPeriod7* row = p;
+    strncat(timestamp, row->quarterbeginning, 20);
 }
 
 void populate_phase_2(void* p, const char* field, const char* value) {
@@ -593,6 +642,13 @@ void link_key_index(void* p) {
     row->key.ptr = idx2ptr(row->key.idx, key);
 }
 
+int period_tables[n_plexosperiods] = {
+    [_period_0] = period_0, [_period_1] = period_1, [_period_2] = period_2, 
+    [_period_3] = period_3, [_period_4] = period_4, [_period_6] = period_6, 
+    [_period_7] = period_7
+};
+
+
 struct plexosData data = {0};
 
 struct plexosTable tables[n_plexostables] = {
@@ -605,7 +661,6 @@ struct plexosTable tables[n_plexostables] = {
 
     [unit] = {.name = "t_unit",
               .id = "unit_id",
-              .zeroindexed = true,
               .populator = populate_unit,
               .linker = link_noop,
               .rows = (void***) &data.units,
@@ -613,7 +668,6 @@ struct plexosTable tables[n_plexostables] = {
 
     [timeslice] = {.name = "t_timeslice",
                    .id = "timeslice_id",
-                   .zeroindexed = true,
                    .populator = populate_timeslice,
                    .linker = link_noop,
                    .rows = (void***) &data.timeslices,
@@ -635,7 +689,6 @@ struct plexosTable tables[n_plexostables] = {
 
     [sample] = {.name = "t_sample",
                 .id = "sample_id",
-                .zeroindexed = true,
                 .linker = link_noop,
                 .populator = populate_sample,
                 .rows = (void***) &data.samples,
@@ -711,50 +764,64 @@ struct plexosTable tables[n_plexostables] = {
 
     [period_0] = {.name = "t_period_0",
                   .id = "interval_id",
+                  .h5name = "interval",
                   .populator = populate_period_0,
                   .linker = link_noop,
+                  .puttimestamp = puttimestamp_period_0,
                   .rows = (void***) &data.intervals,
                   .rowsize = sizeof(struct plexosPeriod0)},
 
     [period_1] = {.name = "t_period_1",
                   .id = "day_id",
+                  .h5name = "day",
                   .populator = populate_period_1,
                   .linker = link_noop,
+                  .puttimestamp = puttimestamp_period_1,
                   .rows = (void***) &data.days,
                   .rowsize = sizeof(struct plexosPeriod1)},
 
     [period_2] = {.name = "t_period_2",
                   .id = "week_id",
+                  .h5name = "week",
                   .populator = populate_period_2,
                   .linker = link_noop,
+                  .puttimestamp = puttimestamp_period_2,
                   .rows = (void***) &data.weeks,
                   .rowsize = sizeof(struct plexosPeriod2)},
 
     [period_3] = {.name = "t_period_3",
                   .id = "month_id",
+                  .h5name = "month",
                   .populator = populate_period_3,
                   .linker = link_noop,
+                  .puttimestamp = puttimestamp_period_3,
                   .rows = (void***) &data.months,
                   .rowsize = sizeof(struct plexosPeriod3)},
 
     [period_4] = {.name = "t_period_4",
                   .id = "fiscal_year_id",
+                  .h5name = "year",
                   .populator = populate_period_4,
                   .linker = link_noop,
+                  .puttimestamp = puttimestamp_period_4,
                   .rows = (void***) &data.years,
                   .rowsize = sizeof(struct plexosPeriod4)},
 
     [period_6] = {.name = "t_period_6",
                   .id = "hour_id",
+                  .h5name = "hour",
                   .populator = populate_period_6,
                   .linker = link_noop,
+                  .puttimestamp = puttimestamp_period_6,
                   .rows = (void***) &data.hours,
                   .rowsize = sizeof(struct plexosPeriod6)},
 
     [period_7] = {.name = "t_period_7",
                   .id = "quarter_id",
+                  .h5name = "quarter",
                   .populator = populate_period_7,
                   .linker = link_noop,
+                  .puttimestamp = puttimestamp_period_7,
                   .rows = (void***) &data.quarters,
                   .rowsize = sizeof(struct plexosPeriod7)},
 
@@ -856,14 +923,18 @@ void init_data() {
 
 void finalize_data() {
 
+    // TODO: units have negative indices??
+
     // Link up data structures
     for (size_t t = 0; t < n_plexostables; t++) {
 
+        //printf("%s\n", tables[t].name);
         void** rows = *(tables[t].rows);
 
-        for (size_t i = 0; i++; i <= tables[t].max_idx) {
+        for (size_t i = 0; i <= tables[t].max_idx; i++) {
 
             if (rows[i] != NULL) {
+                //printf("  Linking %d\n", i);
                 tables[t].linker(rows[i]);
             }
 
