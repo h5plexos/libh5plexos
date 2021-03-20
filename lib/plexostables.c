@@ -3,7 +3,7 @@
 #include <stdbool.h>
 #include <string.h>
 
-#define _XOPEN_SOURCE // using strptime, so won't be portable to Windows
+#define _XOPEN_SOURCE // using strptime for now, so won't be portable to Windows
 #include <time.h>
 
 #include "plexostables.h"
@@ -26,12 +26,16 @@ char* stralloc(const char* x) {
     return p;
 }
 
+void strcat_nospaces(char* dest, char* src) {
+    for (size_t i = 0; i < strlen(src); i++) {
+        if (src[i] != ' ') strncat(dest, src + i, 1);
+    }
+}
+
 void* idx2ptr(size_t idx, int table_idx) {
 
     struct plexosTable table = tables[table_idx];
     void* p = NULL;
-
-    //printf("%s idx:\t%d\n", table.name, idx);
 
     if (idx <= table.max_idx) {
         p = (*(table.rows))[idx];
@@ -41,8 +45,6 @@ void* idx2ptr(size_t idx, int table_idx) {
         fprintf(stderr, "%s index %u not available\n", table.name, idx);
     }
 
-    //printf("%s ptr:\t%d\n", table.name, p);
-    //printf("---\n");
     return p;
 
 }
@@ -246,9 +248,47 @@ void populate_collection(void* p, const char* field, const char* value) {
 }
 
 void link_collection(void* p) {
-    struct plexosCollection* row = p;
-    row->parentclass.ptr = idx2ptr(row->parentclass.idx, class);
-    row->childclass.ptr = idx2ptr(row->childclass.idx, class);
+
+    struct plexosCollection* collection = p;
+
+    collection->parentclass.ptr = idx2ptr(collection->parentclass.idx, class);
+    collection->childclass.ptr = idx2ptr(collection->childclass.idx, class);
+
+    collection->isobjects = strcmp(collection->parentclass.ptr->name, "System") == 0;
+    collection->h5name[0] = '\0';
+
+    size_t namesize = 0;
+
+    if (!collection->isobjects) {
+
+        char* prefix = strcmp(collection->complementname, "") == 0 ?
+            collection->parentclass.ptr->name : collection->complementname;
+
+        namesize = strlen(prefix);
+
+        if (namesize + 1 <= MAXSTRINGLENGTH) {
+            strcat_nospaces(collection->h5name, prefix);
+            strcat(collection->h5name, "_");
+        } else {
+            // This is not strictly true, since we're counting the spaces
+            // against the length but not actually storing them
+            fprintf(stderr, "Encountered a collection prefix longer than %d characters: %s\n",
+                    MAXSTRINGLENGTH, prefix);
+            exit(EXIT_FAILURE);
+        }
+    }
+
+    namesize += strlen(collection->name);
+    if (namesize <= MAXSTRINGLENGTH) {
+        strcat_nospaces(collection->h5name, collection->name);
+    } else {
+        // This is not strictly true, since we're counting the spaces against
+        // the the length but not actually storing them
+        fprintf(stderr, "Encountered a collection name longer than %d characters: %s%s\n",
+            MAXSTRINGLENGTH, collection->h5name, collection->name);
+        exit(EXIT_FAILURE);
+    }
+
 }
 
 void populate_property(void* p, const char* field, const char* value) {
@@ -338,12 +378,19 @@ void populate_membership(void* p, const char* field, const char* value) {
 }
 
 void link_membership(void* p) {
-    struct plexosMembership* row = p;
-    row->parentclass.ptr = idx2ptr(row->parentclass.idx, class);
-    row->childclass.ptr = idx2ptr(row->childclass.idx, class);
-    row->collection.ptr = idx2ptr(row->collection.idx, collection);
-    row->parentobject.ptr = idx2ptr(row->parentobject.idx, object);
-    row->childobject.ptr = idx2ptr(row->childobject.idx, object);
+
+    struct plexosMembership* membership = p;
+
+    membership->parentclass.ptr = idx2ptr(membership->parentclass.idx, class);
+    membership->childclass.ptr = idx2ptr(membership->childclass.idx, class);
+    membership->collection.ptr = idx2ptr(membership->collection.idx, collection);
+    membership->parentobject.ptr = idx2ptr(membership->parentobject.idx, object);
+    membership->childobject.ptr = idx2ptr(membership->childobject.idx, object);
+
+    struct plexosCollection* coll = membership->collection.ptr;
+    membership->collection_membership_idx = coll->nmembers;
+    coll->nmembers++;
+
 }
 
 void populate_attribute_data(void* p, const char* field, const char* value) {
@@ -608,12 +655,19 @@ void populate_key(void* p, const char* field, const char* value) {
 }
 
 void link_key(void* p) {
+
     struct plexosKey* row = p;
     row->membership.ptr = idx2ptr(row->membership.idx, membership);
     row->model.ptr = idx2ptr(row->model.idx, model);
     row->property.ptr = idx2ptr(row->property.idx, property);
     row->sample.ptr = idx2ptr(row->sample.idx, sample);
     row->timeslice.ptr = idx2ptr(row->timeslice.idx, timeslice);
+
+    struct plexosProperty* prop = row->property.ptr;
+    if (row->band > prop->nbands) {
+        prop->nbands = row->band;
+    }
+
 }
 
 void populate_key_index(void* p, const char* field, const char* value) {
@@ -923,40 +977,26 @@ void init_data() {
 
 void finalize_data() {
 
-    // TODO: units have negative indices??
-
     // Link up data structures
     for (size_t t = 0; t < n_plexostables; t++) {
-
-        //printf("%s\n", tables[t].name);
         void** rows = *(tables[t].rows);
-
         for (size_t i = 0; i <= tables[t].max_idx; i++) {
-
             if (rows[i] != NULL) {
-                //printf("  Linking %d\n", i);
                 tables[t].linker(rows[i]);
             }
-
         }
-
     }
 
     // Consolidate data arrays
     for (size_t t = 0; t < n_plexostables; t++) {
-
         void** rows = *(tables[t].rows);
         size_t next_dense = 0;
-
         for (size_t i = 0; i <= tables[t].max_idx; i++) {
-
             if (rows[i] != NULL) {
                 rows[next_dense] = rows[i];
                 next_dense++;
             }
-
         }
-
     }
 
 }

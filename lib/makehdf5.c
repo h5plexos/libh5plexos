@@ -8,16 +8,6 @@
 #include "makehdf5.h"
 
 #define H5PLEXOS_VERSION "v0.6.0"
-#define MAXSTRINGLENGTH 255 // TODO: Generalize this with the XML length
-
-enum membershipRowFields {
-    first, second, n_membershipfields
-};
-
-struct plexosMembershipRow {
-    char first[MAXSTRINGLENGTH];
-    char second[MAXSTRINGLENGTH];
-};
 
 const char* object_names[n_membershipfields] = {
     [first] = "Name", [second] = "Category"
@@ -32,67 +22,6 @@ size_t field_offsets[n_membershipfields] = {
     [second] = HOFFSET(struct plexosMembershipRow, second)
 };
 
-struct plexosCollectionTable {
-    struct plexosMembershipRow* rows;
-    size_t nrows;
-    char name[MAXSTRINGLENGTH];
-    bool is_objects;
-};
-
-void strcat_nospaces(char* dest, char* src) {
-    for (size_t i = 0; i < strlen(src); i++) {
-        if (src[i] != ' ') strncat(dest, src + i, 1);
-    }
-}
-
-void set_collection_name(
-    struct plexosCollectionTable* table, struct plexosCollection* coll) {
-
-    table->name[0] = '\0';
-    size_t namesize = 0;
-
-    if (!table->is_objects) {
-
-        char* prefix = strcmp(coll->complementname, "") == 0 ?
-            coll->parentclass.ptr->name : coll->complementname;
-
-        namesize = strlen(prefix);
-
-        if (namesize + 1 <= MAXSTRINGLENGTH) {
-            strcat_nospaces(table->name, prefix);
-            strcat(table->name, "_");
-        } else {
-            // This is not strictly true, since we're counting the spaces
-            // against the length but not actually storing them
-            fprintf(stderr, "Encountered a collection prefix longer than %d characters: %s\n",
-                    MAXSTRINGLENGTH, prefix);
-            exit(EXIT_FAILURE);
-        }
-    }
-
-    namesize += strlen(coll->name);
-    if (namesize <= MAXSTRINGLENGTH) {
-        strcat_nospaces(table->name, coll->name);
-    } else {
-        // This is not strictly true, since we're counting the spaces against
-        // the the length but not actually storing them
-        fprintf(stderr, "Encountered a collection name longer than %d characters: %s%s\n",
-            MAXSTRINGLENGTH, table->name, coll->name);
-        exit(EXIT_FAILURE);
-    }
-
-}
-
-size_t find_collection(struct plexosCollection* coll) {
-    for (size_t c = 0; c < tables[collection].count; c++) {
-        if (coll == data.collections[c]) {
-            return c;
-        }
-    }
-    fprintf(stderr, "Could not find collection %s\n", coll->name);
-    exit(EXIT_FAILURE);
-}
-
 void add_configs(hid_t f) {
 
     H5LTset_attribute_string(f, "/", "h5plexos", H5PLEXOS_VERSION);
@@ -106,53 +35,32 @@ void add_configs(hid_t f) {
 
 }
 
-void add_collections(hid_t f, int compressionlevel) {
+void add_collections(hid_t meta, int compressionlevel) {
 
     size_t n_collections = tables[collection].count;
     size_t n_memberships = tables[membership].count;
 
-    struct plexosCollectionTable* collection_memberships =
-        calloc(n_collections, sizeof(struct plexosCollectionTable));
-    memset(collection_memberships, 0, n_collections * sizeof(struct plexosCollectionTable));
-
     for (size_t m = 0; m < n_memberships; m++) {
+
         struct plexosMembership* membership = data.memberships[m];
-        size_t c = find_collection(membership->collection.ptr);
-        data.memberships[m]->collection_idx = c;
-        data.memberships[m]->collection_membership_idx = collection_memberships[c].nrows;
-        collection_memberships[c].nrows++;
-    }
+        struct plexosCollection* collection = membership->collection.ptr;
+        size_t c_m = membership->collection_membership_idx;
 
-    for (size_t c = 0; c < n_collections; c++) {
+        if (collection->rows == NULL) {
+            collection->rows = calloc(collection->nmembers, sizeof(struct plexosMembershipRow));
+        }
+        struct plexosMembershipRow* row = &(collection->rows[c_m]);
 
-        struct plexosCollectionTable* table = &(collection_memberships[c]);
-        struct plexosCollection* coll = data.collections[c];
-
-        table->is_objects = strcmp(coll->parentclass.ptr->name, "System") == 0;
-        table->rows = calloc(table->nrows, sizeof(struct plexosMembershipRow));
-        set_collection_name(table, coll);
-
-    }
-
-    for (size_t m = 0; m < n_memberships; m++) {
-
-        size_t c = data.memberships[m]->collection_idx;
-        size_t c_m = data.memberships[m]->collection_membership_idx;
-        struct plexosCollectionTable* table = &collection_memberships[c];
-        struct plexosMembershipRow* row = &table->rows[c_m];
-
-        if (table->is_objects) {
-            strcpy(row->first, data.memberships[m]->childobject.ptr->name);
-            strcpy(row->second, data.memberships[m]->childobject.ptr->category.ptr->name);
+        if (collection->isobjects) {
+            strcpy(row->first, membership->childobject.ptr->name);
+            strcpy(row->second, membership->childobject.ptr->category.ptr->name);
         } else {
-            strcpy(row->first, data.memberships[m]->parentobject.ptr->name);
-            strcpy(row->second, data.memberships[m]->childobject.ptr->name);
+            strcpy(row->first, membership->parentobject.ptr->name);
+            strcpy(row->second, membership->childobject.ptr->name);
         }
 
     }
 
-    hid_t meta =
-        H5Gcreate2(f, "metadata", H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
     hid_t objects =
         H5Gcreate2(meta, "objects", H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
     hid_t relations =
@@ -170,11 +78,11 @@ void add_collections(hid_t f, int compressionlevel) {
 
     for (size_t c = 0; c < n_collections; c++) {
 
-        struct plexosCollectionTable table = collection_memberships[c];
+        struct plexosCollection* collection = data.collections[c];
 
-        if (table.nrows > 0) {
+        if (collection->nmembers > 0) {
 
-            if (table.is_objects) {
+            if (collection->isobjects) {
                 table_group = objects;
                 field_names = object_names;
             } else {
@@ -186,23 +94,22 @@ void add_collections(hid_t f, int compressionlevel) {
             // size is of course table.nrows). Not a big deal, but might be
             // nice to keep current == max
             H5TBmake_table(
-                table.name, table_group, table.name,
-                n_membershipfields, table.nrows, sizeof(struct plexosMembershipRow), 
-                field_names, field_offsets, field_types, table.nrows,
-                NULL, compressionlevel, table.rows);
+                collection->h5name, table_group, collection->h5name,
+                n_membershipfields, collection->nmembers, sizeof(struct plexosMembershipRow),
+                field_names, field_offsets, field_types, collection->nmembers,
+                NULL, compressionlevel, collection->rows);
 
         }
 
     }
 
-    H5Tclose(string_type);
-    H5Gclose(meta);
     H5Gclose(objects);
     H5Gclose(relations);
+    H5Tclose(string_type);
 
 }
 
-void add_times(hid_t f, const char* localformat, int compressionlevel) {
+void add_times(hid_t meta, const char* localformat, int compressionlevel) {
 
     // PLEXOS data format notes:
     // Period type 0 - phase-native interval / block data
@@ -213,7 +120,7 @@ void add_times(hid_t f, const char* localformat, int compressionlevel) {
     // Direct mapping to period labels
 
     hid_t times =
-        H5Gcreate2(f, "metadata/times", H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
+        H5Gcreate2(meta, "times", H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
 
     hid_t string_type = H5Tcopy(H5T_C_S1);
     H5Tset_size(string_type, 20);
@@ -240,6 +147,57 @@ void add_times(hid_t f, const char* localformat, int compressionlevel) {
 
 }
 
+void add_values(hid_t dat, int compressionlevel) {
+
+    for (size_t i = 0; i < tables[key_index].count; i++) {
+
+        struct plexosKeyIndex* ki = data.keyindices[i];
+
+        hid_t dset = dataset(dat, ki, compressionlevel);
+
+        // Just create the datasets for now, populate later
+        // double* values = resultvalues(resultdata, ki.periodtype, ki.position, ki.length)
+        // hid_t mem_space, file_space =
+        //     _(ki.key.band, keyindex->key.ptr->membership.ptr->collection_membership_idx)
+
+        // H5Dwrite(dset, mem_type, mem_space, file_space, xfer_plist, values)
+        H5Dclose(dset);
+
+    }
+
+}
+
+hid_t dataset(hid_t dat, struct plexosKeyIndex* ki, int compressionlevel) {
+
+    struct plexosCollection* collection = ki->key.ptr->membership.ptr->collection.ptr;
+    struct plexosProperty* property = ki->key.ptr->property.ptr;
+
+    struct plexosTable* phase = get_nominal_phase(ki->key.ptr->phase);
+    struct plexosTable* period = get_nominal_period(ki->periodtype);
+
+    bool is_summarydata = property->issummary && ki->periodtype != 0;
+    char* collection_name = collection->h5name;
+    char* property_name = is_summarydata ? property->summaryname : property->name;
+
+    // TODO: Create phase, period, collection groups if needed
+
+
+    hid_t dset;
+    if (H5LTfind_dataset(g, property_name)) {
+        dset = _
+    } else {
+        // TODO: Create property dataset if needed
+        // (property->nbands, ki->length, collection->nmembers)
+        // H5LTmake_dataset_double(dat, name, 3, dims, values)
+        // set period_offset = ki->periodoffset,
+        // set units = property->summaryunit.ptr->value or property->unit.ptr->value
+        dset = _
+    }
+
+    return dset
+
+}
+
 char default_localformat[20] = "%d/%m/%Y %T";
 
 void create_hdf5(zip_t* archive, int* err, const char* outfile) {
@@ -250,11 +208,18 @@ void create_hdf5(zip_t* archive, int* err, const char* outfile) {
 
     hid_t f = H5Fcreate(outfile, H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT);
     add_configs(f);
-    add_collections(f, compressionlevel);
-    add_times(f, timeformat, compressionlevel);
-    // add_values
+
+    hid_t meta =
+        H5Gcreate2(f, "metadata", H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
+    add_collections(meta, compressionlevel);
+    add_times(meta, timeformat, compressionlevel);
+    H5Gclose(meta);
+
+    hid_t dat =
+        H5Gcreate2(f, "data", H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
+    //add_values(dat, compressionlevel);
+    H5Gclose(dat);
 
     H5Fclose(f);
 
 }
-

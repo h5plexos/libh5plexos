@@ -3,6 +3,8 @@
 
 #include <stdbool.h>
 
+#define MAXSTRINGLENGTH 255 // TODO: Generalize this with the XML length
+
 enum plexosTableIdx {
     config, unit, timeslice, model, band, sample, sample_weight,
     class_group, class, category, attribute, collection, property,
@@ -169,6 +171,14 @@ union plexosAttributeRef {
     size_t idx;
 };
 
+enum membershipRowFields {
+    first, second, n_membershipfields
+};
+
+struct plexosMembershipRow {
+    char first[MAXSTRINGLENGTH+1];
+    char second[MAXSTRINGLENGTH+1];
+};
 
 struct plexosCollection {
     char* name;
@@ -176,6 +186,10 @@ struct plexosCollection {
     int lang;
     union plexosClassRef parentclass; // parent_class_id
     union plexosClassRef childclass; // child_class_id
+    size_t nmembers;
+    char h5name[MAXSTRINGLENGTH+1];
+    bool isobjects;
+    struct plexosMembershipRow* rows;
 };
 
 union plexosCollectionRef {
@@ -195,6 +209,7 @@ struct plexosProperty {
     union plexosUnitRef unit; // unit_id
     union plexosUnitRef summaryunit; // summary_unit_id
     union plexosCollectionRef collection; // collection_id
+    size_t nbands;
 };
 
 union plexosPropertyRef {
@@ -223,8 +238,6 @@ struct plexosMembership {
     union plexosCollectionRef collection; // collection_id
     union plexosObjectRef parentobject; // parent_object_id
     union plexosObjectRef childobject; // child_object_id
-    // Should these be stored elsewhere?
-    size_t collection_idx;
     size_t collection_membership_idx;
 };
 
