@@ -1,5 +1,6 @@
 #include <stdlib.h>
 #include <stdio.h>
+#include <string.h>
 
 #include <zip.h>
 
@@ -16,11 +17,19 @@ void h5plexos(const char* infile, const char* outfile) {
         return;
     }
 
-    /* TODO: Obviously, don't hardcode the XML file name...  */
-    zip_int64_t xml_idx = zip_name_locate(archive, "Model Base_8200 Solution.xml", 0);
+    const char* infile_name = strrchr(infile,  '/');
+    infile_name = infile_name == NULL ? infile : &(infile_name[1]);
+    size_t infile_length = strlen(infile_name);
+    char xml_name[infile_length+1];
+    strncpy(xml_name, infile_name, infile_length-3);
+    xml_name[infile_length-3] = '\0';
+    strcat(xml_name, "xml");
+    printf("Looking for %s inside zip archive\n", xml_name);
+
+    zip_int64_t xml_idx = zip_name_locate(archive, xml_name, 0);
     if (xml_idx == -1) {
-        fprintf(stderr, "The XML file could not be found in the archive. "
-                        "Are you sure this is a PLEXOS output?\n");
+        fprintf(stderr, "'%s' could not be found in the archive. "
+                        "Are you sure this is a PLEXOS output?\n", xml_name);
         return;
     }
 
