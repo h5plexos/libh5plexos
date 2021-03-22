@@ -147,54 +147,102 @@ void add_times(hid_t meta, const char* localformat, int compressionlevel) {
 
 }
 
+hid_t dataset(hid_t dat, struct plexosKeyIndex* ki, int compressionlevel) {
+
+    struct plexosTable* phase = get_phasetype(ki->key.ptr->phase);
+    struct plexosTable* period = get_periodtype(ki->periodtype);
+    struct plexosCollection* collection = ki->key.ptr->membership.ptr->collection.ptr;
+    struct plexosProperty* property = ki->key.ptr->property.ptr;
+
+    bool is_summarydata = property->issummary && ki->periodtype != 0;
+    char* property_name = is_summarydata ? property->summaryname : property->name;
+
+    hid_t h5phase = H5LTfind_dataset(dat, phase->h5name) ?
+        H5Gopen2(dat, phase->h5name, H5P_DEFAULT) :
+        H5Gcreate2(dat, phase->h5name, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
+    if (h5phase < 0) {
+        fprintf(stderr, "Error getting HDF5 phase group '%s'", phase->h5name);
+        exit(EXIT_FAILURE);
+    }
+
+    hid_t h5period = H5LTfind_dataset(h5phase, period->h5name) ?
+        H5Gopen2(h5phase, period->h5name, H5P_DEFAULT) :
+        H5Gcreate2(h5phase, period->h5name, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
+    if (h5period < 0) {
+        fprintf(stderr, "Error getting HDF5 period group '%s'", period->h5name);
+        exit(EXIT_FAILURE);
+    }
+
+    hid_t h5coll = H5LTfind_dataset(h5period, collection->h5name) ?
+        H5Gopen2(h5period, collection->h5name, H5P_DEFAULT) :
+        H5Gcreate2(h5period, collection->h5name, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
+    if (h5coll < 0) {
+        fprintf(stderr, "Error getting HDF5 collection group '%s'", collection->h5name);
+        exit(EXIT_FAILURE);
+    }
+
+    hid_t dset;
+    if (H5LTfind_dataset(h5coll, property_name)) {
+
+        dset = H5Dopen2(h5coll, property_name, H5P_DEFAULT);
+
+    } else {
+
+        hsize_t dims[3] = {collection->nmembers, ki->length, property->nbands};
+        hsize_t chunk_dims[3] = {1, ki->length, property->nbands};
+
+        hid_t dset_space = H5Screate_simple(3, dims, NULL);
+
+        hid_t dset_properties = H5Pcreate(H5P_DATASET_CREATE);
+        H5Pset_deflate(dset_properties, compressionlevel);
+        H5Pset_chunk(dset_properties, 3, chunk_dims);
+
+        dset = H5Dcreate2(h5coll, property_name, H5T_IEEE_F64LE, dset_space,
+                          H5P_DEFAULT, dset_properties, H5P_DEFAULT);
+        H5LTset_attribute_int(h5coll, property_name, "period_offset", &(ki->periodoffset), 1);
+        H5LTset_attribute_string(h5coll, property_name, "units",
+            is_summarydata ? property->summaryunit.ptr->value : property->unit.ptr->value);
+
+        H5Sclose(dset_space);
+        H5Pclose(dset_properties);
+
+    }
+    if (dset < 0) {
+        fprintf(stderr, "Error getting HDF5 property dataset '%s'", property_name);
+        exit(EXIT_FAILURE);
+    }
+
+    H5Gclose(h5phase);
+    H5Gclose(h5period);
+    H5Gclose(h5coll);
+
+    return dset;
+
+}
+
 void add_values(hid_t dat, int compressionlevel) {
 
     for (size_t i = 0; i < tables[key_index].count; i++) {
 
         struct plexosKeyIndex* ki = data.keyindices[i];
+        struct plexosKey* key = ki->key.ptr;
 
         hid_t dset = dataset(dat, ki, compressionlevel);
+        hsize_t start[3] = {key->membership.ptr->collection_membership_idx, 0, key->band-1};
+        hsize_t count[3] = {1, ki->length, 1};
 
-        // Just create the datasets for now, populate later
-        // double* values = resultvalues(resultdata, ki.periodtype, ki.position, ki.length)
-        // hid_t mem_space, file_space =
-        //     _(ki.key.band, keyindex->key.ptr->membership.ptr->collection_membership_idx)
+        hid_t dset_space = H5Dget_space(dset);
+        H5Sselect_hyperslab(dset_space, H5S_SELECT_SET, start, NULL, count, NULL);
 
-        // H5Dwrite(dset, mem_type, mem_space, file_space, xfer_plist, values)
+        // printf("period %u -> position %u:%u\n",
+        //        ki->periodtype, ki->position, ki->position + ki->length-1);
+        double* values = &(data.values[ki->periodtype][ki->position / 8]);
+        H5Dwrite(dset, H5T_IEEE_F64LE, H5S_ALL, dset_space, H5P_DEFAULT, values);
+
+        H5Sclose(dset_space);
         H5Dclose(dset);
 
     }
-
-}
-
-hid_t dataset(hid_t dat, struct plexosKeyIndex* ki, int compressionlevel) {
-
-    struct plexosCollection* collection = ki->key.ptr->membership.ptr->collection.ptr;
-    struct plexosProperty* property = ki->key.ptr->property.ptr;
-
-    struct plexosTable* phase = get_nominal_phase(ki->key.ptr->phase);
-    struct plexosTable* period = get_nominal_period(ki->periodtype);
-
-    bool is_summarydata = property->issummary && ki->periodtype != 0;
-    char* collection_name = collection->h5name;
-    char* property_name = is_summarydata ? property->summaryname : property->name;
-
-    // TODO: Create phase, period, collection groups if needed
-
-
-    hid_t dset;
-    if (H5LTfind_dataset(g, property_name)) {
-        dset = _
-    } else {
-        // TODO: Create property dataset if needed
-        // (property->nbands, ki->length, collection->nmembers)
-        // H5LTmake_dataset_double(dat, name, 3, dims, values)
-        // set period_offset = ki->periodoffset,
-        // set units = property->summaryunit.ptr->value or property->unit.ptr->value
-        dset = _
-    }
-
-    return dset
 
 }
 
@@ -202,7 +250,7 @@ char default_localformat[20] = "%d/%m/%Y %T";
 
 void create_hdf5(zip_t* archive, int* err, const char* outfile) {
 
-    // TODO: set these runtime arguments
+    // TODO: set these as runtime arguments
     int compressionlevel = 1;
     char* timeformat = &default_localformat;
 
@@ -217,7 +265,7 @@ void create_hdf5(zip_t* archive, int* err, const char* outfile) {
 
     hid_t dat =
         H5Gcreate2(f, "data", H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
-    //add_values(dat, compressionlevel);
+    add_values(dat, compressionlevel);
     H5Gclose(dat);
 
     H5Fclose(f);

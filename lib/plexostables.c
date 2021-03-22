@@ -702,7 +702,6 @@ int period_tables[n_plexosperiods] = {
     [_period_7] = period_7
 };
 
-
 struct plexosData data = {0};
 
 struct plexosTable tables[n_plexostables] = {
@@ -880,18 +879,21 @@ struct plexosTable tables[n_plexostables] = {
                   .rowsize = sizeof(struct plexosPeriod7)},
 
     [phase_2] = {.name = "t_phase_2",
+                 .h5name = "PASA",
                  .populator = populate_phase_2,
                  .linker = link_phase_2,
                  .rows = (void***) &data.pasa,
                  .rowsize = sizeof(struct plexosPhase2)},
 
     [phase_3] = {.name = "t_phase_3",
+                 .h5name = "MT",
                  .populator = populate_phase_3,
                  .linker = link_phase_3,
                  .rows = (void***) &data.mt,
                  .rowsize = sizeof(struct plexosPhase3)},
 
     [phase_4] = {.name = "t_phase_4",
+                 .h5name = "ST",
                  .populator = populate_phase_4,
                  .linker = link_phase_4,
                  .rows = (void***) &data.st,
@@ -926,6 +928,30 @@ struct plexosTable* get_plexostable(const char* tablename) {
 
     return ptr;
 
+}
+
+struct plexosTable* get_phasetype(size_t phase) {
+    switch (phase) {
+        case 2: return &tables[phase_2];
+        case 3: return &tables[phase_3];
+        case 4: return &tables[phase_4];
+        default: fprintf(stderr, "Phase %u not recognized");
+                 exit(EXIT_FAILURE);
+    };
+}
+
+struct plexosTable* get_periodtype(size_t period) {
+    switch (period) {
+        case 0: return &tables[period_0];
+        case 1: return &tables[period_1];
+        case 2: return &tables[period_2];
+        case 3: return &tables[period_3];
+        case 4: return &tables[period_4];
+        case 6: return &tables[period_6];
+        case 7: return &tables[period_7];
+        default: fprintf(stderr, "Period %u not recognized");
+                 exit(EXIT_FAILURE);
+    };
 }
 
 void* row_array(int table_idx) {

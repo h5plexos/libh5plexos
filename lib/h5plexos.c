@@ -37,6 +37,36 @@ void h5plexos(const char* infile, const char* outfile) {
     // also reset tables and parser state?
     init_data();
     parse(archive, &err, xml_idx, populate_pass);
+
+    char fname[13];
+    struct zip_stat stat = {};
+    for (size_t i = 0; i < 8; i++) {
+
+        sprintf(fname, "t_data_%u.BIN", i);
+        zip_int64_t bin_idx = zip_name_locate(archive, fname, 0);
+
+        if (bin_idx >= 0) {
+
+            zip_file_t* bin = zip_fopen_index(archive, bin_idx, 0);
+            if (bin== NULL) {
+                fprintf(stderr, "Error %d occured when opening %s.\n", err, fname);
+                return;
+            }
+
+            zip_stat_index(archive, bin_idx, 0, &stat);
+            printf("%s\t%u bytes\n", fname, stat.size);
+            data.values[i] = malloc(stat.size);
+            zip_int64_t n = zip_fread(bin, data.values[i], stat.size);
+
+            if (n < stat.size) {
+                fprintf(stderr, "Only read %u bytes from %u byte file\n", n, stat.size);
+                exit(EXIT_FAILURE);
+            }
+
+        }
+
+    }
+
     finalize_data();
     create_hdf5(archive, &err, outfile);
     zip_discard(archive);

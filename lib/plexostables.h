@@ -48,6 +48,9 @@ struct plexosTable tables[n_plexostables];
 
 struct plexosTable* get_plexostable(const char* tablename);
 
+struct plexosTable* get_phasetype(size_t phase);
+struct plexosTable* get_periodtype(size_t phase);
+
 // PLEXOS table row data
 
 struct plexosConfig {
@@ -432,6 +435,8 @@ struct plexosData {
     struct plexosKey** keys;
     struct plexosKeyIndex** keyindices;
 
+    // TODO: Don't hardcode this?
+    double* values[8];
 };
 
 struct plexosData data;
