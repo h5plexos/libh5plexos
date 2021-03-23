@@ -166,6 +166,7 @@ struct plexosAttribute {
     char* name;
     char* description;
     int enum_; // enum_id
+    int lang;
     union plexosClassRef class; // class_id
 };
 

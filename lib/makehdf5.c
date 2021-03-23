@@ -229,17 +229,17 @@ void add_values(hid_t dat, int compressionlevel) {
 
         hid_t dset = dataset(dat, ki, compressionlevel);
         hsize_t start[3] = {key->membership.ptr->collection_membership_idx, 0, key->band-1};
-        hsize_t count[3] = {1, ki->length, 1};
+        hsize_t data_dims[3] = {1, ki->length, 1};
 
-        hid_t dset_space = H5Dget_space(dset);
-        H5Sselect_hyperslab(dset_space, H5S_SELECT_SET, start, NULL, count, NULL);
+        hid_t source_space = H5Screate_simple(3, data_dims, NULL);
+        hid_t dest_space = H5Dget_space(dset);
+        H5Sselect_hyperslab(dest_space, H5S_SELECT_SET, start, NULL, data_dims, NULL);
 
-        // printf("period %u -> position %u:%u\n",
-        //        ki->periodtype, ki->position, ki->position + ki->length-1);
-        double* values = &(data.values[ki->periodtype][ki->position / 8]);
-        H5Dwrite(dset, H5T_IEEE_F64LE, H5S_ALL, dset_space, H5P_DEFAULT, values);
+        double* values = &(data.values[ki->periodtype][ki->position / sizeof(double)]);
+        H5Dwrite(dset, H5T_NATIVE_DOUBLE, source_space, dest_space, H5P_DEFAULT, values);
 
-        H5Sclose(dset_space);
+        H5Sclose(source_space);
+        H5Sclose(dest_space);
         H5Dclose(dset);
 
     }

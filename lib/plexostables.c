@@ -21,7 +21,7 @@ bool strbool(const char* x) {
 }
 
 char* stralloc(const char* x) {
-    char* p = calloc(strlen(x), sizeof(char) + 1);
+    char* p = calloc(strlen(x) + 1, sizeof(char));
     strcpy(p, x);
     return p;
 }
@@ -42,7 +42,7 @@ void* idx2ptr(size_t idx, int table_idx) {
     }
 
     if (idx > table.max_idx || p == NULL) {
-        fprintf(stderr, "%s index %u not available\n", table.name, idx);
+        //fprintf(stderr, "%s index %u not available\n", table.name, idx);
     }
 
     return p;
@@ -216,6 +216,8 @@ void populate_attribute(void* p, const char* field, const char* value) {
         row->enum_ = atoi(value);
     } else if (strequals(field, "class_id")) {
         row->class.idx = atoi(value);
+    } else if (strequals(field, "lang_id")) {
+        row->lang = atoi(value);
     } else {
         fprintf(stderr, "Unexpected field %s in attribute table\n", field);
         exit(EXIT_FAILURE);
@@ -253,6 +255,10 @@ void link_collection(void* p) {
 
     collection->parentclass.ptr = idx2ptr(collection->parentclass.idx, class);
     collection->childclass.ptr = idx2ptr(collection->childclass.idx, class);
+
+    if (collection->parentclass.ptr == NULL || collection->childclass.ptr == NULL) {
+        return; // this collection is not of practical interest
+    }
 
     collection->isobjects = strcmp(collection->parentclass.ptr->name, "System") == 0;
     collection->h5name[0] = '\0';

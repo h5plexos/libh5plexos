@@ -71,16 +71,13 @@ void parse(zip_t* archive, int* err, zip_int64_t xml_idx, struct parseSpec spec)
         }
 
     }
-    puts("Freeing parser...");
-    XML_ParserFree(p); // TODO: "double free or corruption (out)"
-    puts("Finished parse");
+    XML_ParserFree(p);
 
     int ferr = zip_fclose(xml);
     if (ferr != 0) {
         fprintf(stderr, "Error %d occured when closing internal XML file.\n", ferr);
         return;
     }
-    puts("Closed XML file");
 
 }
 
