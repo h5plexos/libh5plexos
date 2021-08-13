@@ -37,7 +37,7 @@ void parse(zip_t* archive, int* err, zip_int64_t xml_idx, struct parseSpec spec)
 
     zip_file_t* xml = zip_fopen_index(archive, xml_idx, 0);
     if (xml == NULL) {
-        fprintf(stderr, "Error %d occured when opening internal XML file.\n", err);
+        fprintf(stderr, "Error %d occured when opening internal XML file.\n", *err);
         return;
     }
 

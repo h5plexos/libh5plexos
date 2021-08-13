@@ -1,9 +1,11 @@
+#define _XOPEN_SOURCE
+
 #include <stdlib.h>
 #include <stdio.h>
 #include <stdbool.h>
 #include <string.h>
 
-#define _XOPEN_SOURCE // using strptime for now, so won't be portable to Windows
+// using strptime, so won't compile on Windows without gcc/mingw
 #include <time.h>
 
 #include "plexostables.h"
@@ -105,9 +107,8 @@ void populate_model(void* p, const char* field, const char* value) {
     }
 }
 
+// This function won't be called (assuming well-formed XML)
 void populate_band(void* p, const char* field, const char* value) {
-
-    struct plexosBand* row = p;
 
     fprintf(stderr, "Unexpected field %s in band table\n", field);
     exit(EXIT_FAILURE);
@@ -941,7 +942,7 @@ struct plexosTable* get_phasetype(size_t phase) {
         case 2: return &tables[phase_2];
         case 3: return &tables[phase_3];
         case 4: return &tables[phase_4];
-        default: fprintf(stderr, "Phase %u not recognized");
+        default: fprintf(stderr, "Phase %zu not recognized", phase);
                  exit(EXIT_FAILURE);
     };
 }
@@ -955,7 +956,7 @@ struct plexosTable* get_periodtype(size_t period) {
         case 4: return &tables[period_4];
         case 6: return &tables[period_6];
         case 7: return &tables[period_7];
-        default: fprintf(stderr, "Period %u not recognized");
+        default: fprintf(stderr, "Period %zu not recognized", period);
                  exit(EXIT_FAILURE);
     };
 }

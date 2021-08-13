@@ -38,7 +38,7 @@ void h5plexos(const char* infile, const char* outfile) {
     printf("Count\tMax Idx\tTable\n");
     printf("=====\t=======\t=====\n");
     for (int i = 0; i < n_plexostables; i++) {
-        printf("%d\t%d\t%s\n",
+        printf("%zu\t%d\t%s\n",
                tables[i].count, tables[i].max_idx, tables[i].name);
     }
 
@@ -51,24 +51,24 @@ void h5plexos(const char* infile, const char* outfile) {
     struct zip_stat stat = {};
     for (size_t i = 0; i < 8; i++) {
 
-        sprintf(fname, "t_data_%u.BIN", i);
+        sprintf(fname, "t_data_%zu.BIN", i);
         zip_int64_t bin_idx = zip_name_locate(archive, fname, 0);
 
         if (bin_idx >= 0) {
 
             zip_file_t* bin = zip_fopen_index(archive, bin_idx, 0);
-            if (bin== NULL) {
+            if (bin == NULL) {
                 fprintf(stderr, "Error %d occured when opening %s.\n", err, fname);
                 return;
             }
 
             zip_stat_index(archive, bin_idx, 0, &stat);
-            printf("%s\t%u bytes\n", fname, stat.size);
+            printf("%s\t%lu bytes\n", fname, stat.size);
             data.values[i] = malloc(stat.size);
             zip_int64_t n = zip_fread(bin, data.values[i], stat.size);
 
             if (n < stat.size) {
-                fprintf(stderr, "Only read %u bytes from %u byte file\n", n, stat.size);
+                fprintf(stderr, "Only read %ld bytes from %lu byte file\n", n, stat.size);
                 exit(EXIT_FAILURE);
             }
 
