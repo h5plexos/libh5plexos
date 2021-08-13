@@ -1,0 +1,62 @@
+name: Builds
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+jobs:
+  linux:
+
+    runs-on: ubuntu-latest
+
+    steps:
+
+    - uses: actions/checkout@v2
+
+    - name: Install build tools
+      run: |
+        sudo apt-get install musl-tools
+
+    - name: Build dependencies
+      run: |
+
+        export CC=musl-gcc
+
+        BASEDIR=$(pwd)
+        INSTALLDIR=$BASEDIR/deps/usr
+        mkdir -p $INSTALLDIR
+
+        make get-deps
+
+        cd $BASEDIR/deps/src/zlib-1.2.11
+        ./configure --prefix=$INSTALLDIR --static
+        make
+        make install
+
+        cd $BASEDIR/deps/src/libzip-1.8.0
+        mkdir -p build
+        cd build
+        CC=gcc cmake -DCMAKE_INSTALL_PREFIX=$INSTALLDIR -DZLIB_LIBRARY=$INSTALLDIR/lib/libz.a -DENABLE_BZIP2=OFF -DENABLE_LZMA=OFF -DENABLE_ZSTD=OFF -DENABLE_COMMONCRYPTO=OFF -DENABLE_GNUTLS=OFF -DENABLE_MBEDTLS=OFF -DENABLE_OPENSSL=OFF -DENABLE_WINDOWS_CRYPTO=OFF -DBUILD_SHARED_LIBS=OFF -DBUILD_TOOLS=OFF -DBUILD_REGRESS=OFF -DBUILD_EXAMPLES=OFF -DBUILD_DOC=OFF ..
+        make
+        make install
+
+        cd $BASEDIR/deps/src/expat-2.4.1
+        ./configure --prefix=$INSTALLDIR --enable-shared=no --without-xmlwf --without-examples --without-tests
+        make
+        make install
+
+        cd $BASEDIR/deps/src/hdf5-1.10.7
+        ./configure --prefix=$INSTALLDIR --with-zlib=$INSTALLDIR --disable-shared --enable-tests=no --enable-tools=no
+        make
+        make install
+
+    - name: Compile project
+      run: make
+
+    - name: Store compiled binary
+      uses: actions/upload-artifact@v2
+      with:
+        name: h5plexos-linux
+        path: h5plexos

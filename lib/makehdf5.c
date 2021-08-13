@@ -2,7 +2,7 @@
 #include <string.h>
 
 #include <zip.h>
-#include <hdf5/serial/hdf5_hl.h>
+#include <hdf5_hl.h>
 
 #include "plexostables.h"
 #include "makehdf5.h"
