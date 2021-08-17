@@ -1,5 +1,4 @@
-CC=musl-gcc -static
-CFLAGS=-std=gnu11 -Wall -Ideps/usr/include
+CFLAGS=-static -std=gnu11 -Wall -Ideps/usr/include
 LIBS=deps/usr/lib/libzip.a deps/usr/lib/libexpat.a deps/usr/lib/libhdf5_hl.a deps/usr/lib/libhdf5.a deps/usr/lib/libz.a
 SYSLIBS=-ldl -lm -lc
 CURL=curl -L

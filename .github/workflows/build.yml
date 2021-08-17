@@ -53,10 +53,10 @@ jobs:
         make install
 
     - name: Compile project
-      run: make
+      run: CC=musl-gcc make
 
     - name: Store compiled binary
       uses: actions/upload-artifact@v2
       with:
-        name: h5plexos-linux
+        name: h5plexos-linux_x64
         path: h5plexos
