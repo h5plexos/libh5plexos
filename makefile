@@ -1,11 +1,9 @@
 CFLAGS=-static -std=gnu11 -Wall -Ideps/usr/include
-LIBS=deps/usr/lib/libzip.a deps/usr/lib/libexpat.a deps/usr/lib/libhdf5_hl.a deps/usr/lib/libhdf5.a deps/usr/lib/libz.a
-SYSLIBS=-ldl -lm -lc
 CURL=curl -L
 LIB_SRC_DIR=deps/src
 
 h5plexos: src/h5plexos_cli.o lib/h5plexos.o lib/plexostables.o lib/parsexml.o lib/makehdf5.o
-	$(CC) $(CFLAGS) $^ $(LIBS) $(SYSLIBS) -o $@
+	$(CC) $(CFLAGS) $^ $(LIBS) -o $@
 
 %.o: %.c
 	$(CC) $(CFLAGS) -c $< -o $@

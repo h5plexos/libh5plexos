@@ -53,7 +53,7 @@ jobs:
         make install
 
     - name: Compile project
-      run: CC=musl-gcc make
+      run: CC=musl-gcc LIBS='deps/usr/lib/libzip.a deps/usr/lib/libexpat.a deps/usr/lib/libhdf5_hl.a deps/usr/lib/libhdf5.a deps/usr/lib/libz.a -ldl -lm -lc' make
 
     - name: Store compiled binary
       uses: actions/upload-artifact@v2
