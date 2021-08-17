@@ -71,3 +71,36 @@ jobs:
       with:
         name: h5plexos-linux_x64
         path: h5plexos
+
+  windows:
+
+    runs-on: windows-latest
+
+    defaults:
+      run:
+        shell: msys2 {0}
+
+    steps:
+
+    - uses: actions/checkout@v2
+
+    - uses: msys2/setup-msys2@v2
+      with:
+        update: true
+        install: >-
+          base-devel
+          mingw-w64-x86_64-toolchain
+          mingw-w64-x86_64-libzip
+          mingw-w64-x86_64-expat
+          mingw-w64-x86_64-hdf5
+
+    - name: Compile project
+      run: |
+        LIBS='-lzip -lexpat -lhdf5_hl -lhdf5' make
+
+    - name: Store compiled binary
+      uses: actions/upload-artifact@v2
+      with:
+        name: h5plexos-windows_x64
+        path: h5plexos.exe
+
