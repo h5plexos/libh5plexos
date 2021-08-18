@@ -19,11 +19,11 @@ jobs:
       run: |
         sudo apt-get install musl-tools
 
-    - name: Download and build dependencies
-      run: |
-        ./deps-get.sh
-        export CC=musl-gcc
-        ./deps-build.sh
+    - name: Download dependencies
+      run: ./deps-get.sh
+
+    - name: Build dependencies
+      run: CC=musl-gcc ./deps-build.sh
 
     - name: Compile project
       run: |
@@ -38,22 +38,69 @@ jobs:
 
   windows:
 
-    runs-on: ubuntu-latest
+    runs-on: windows-latest
+
+    defaults:
+      run:
+        shell: msys2 {0}
 
     steps:
 
     - uses: actions/checkout@v2
 
+    - uses: msys2/setup-msys2@v2
+      with:
+        update: true
+        install: >-
+          base-devel
+          compression
+          cmake
+
     - name: Install build tools
       run: |
         mkdir -p deps
-        curl -L https://musl.cc/x86_64-w64-mingw32-cross.tgz | tar xz -C deps
+        curl -O https://musl.cc/x86_64-w64-mingw32-native.zip
+        unzip -d deps x86_64-w64-mingw32-native.zip
+        rm x86_64-w64-mingw32-native.zip
 
-    - name: Download and build dependencies
+    - name: Download dependencies
+      run: ./deps-get.sh
+
+    - name: Build dependencies
       run: |
-        ./deps-get.sh
-        export CC=$(pwd)/deps/x86_64-w64-mingw32-cross/bin/x86_64-w64-mingw32-gcc
-        ./deps-build.sh
+
+        export PATH=$(pwd)/deps/x86_64-w64-mingw32-native/bin:$PATH
+
+        DEPSDIR=$(pwd)/deps
+        INSTALLDIR=$DEPSDIR/usr
+        mkdir -p $INSTALLDIR
+
+        export BINARY_PATH=$INSTALLDIR/bin
+        export INCLUDE_PATH=$INSTALLDIR/include
+        export LIBRARY_PATH=$INSTALLDIR/lib
+
+        cd $DEPSDIR/src/zlib-1.2.11
+        make -fwin32/Makefile.gcc
+        make install -fwin32/Makefile.gcc
+
+        cd $DEPSDIR/src/libzip-1.8.0
+        mkdir -p build
+        cd build
+        cmake -DCMAKE_INSTALL_PREFIX=$INSTALLDIR -DZLIB_INCLUDE_DIR=$INCLUDE_PATH -DZLIB_LIBRARY=$INSTALLDIR/lib/libz.a -DENABLE_BZIP2=OFF -DENABLE_LZMA=OFF -DENABLE_ZSTD=OFF -DENABLE_COMMONCRYPTO=OFF -DENABLE_GNUTLS=OFF -DENABLE_MBEDTLS=OFF -DENABLE_OPENSSL=OFF -DENABLE_WINDOWS_CRYPTO=OFF -DBUILD_SHARED_LIBS=OFF -DBUILD_TOOLS=OFF -DBUILD_REGRESS=OFF -DBUILD_EXAMPLES=OFF -DBUILD_DOC=OFF ..
+        make
+        # cat lib/CMakeFiles/zip.dir/compiler_depend.make
+        # sed -i 's|lib/c:/|/c/|gI' lib/CMakeFiles/zip.dir/compiler_depend.make # Terrible hack to fix broken behaviour
+        # make install
+
+        cd $DEPSDIR/src/expat-2.4.1
+        ./configure --prefix=$INSTALLDIR --enable-shared=no --without-xmlwf --without-examples --without-tests
+        make
+        make install
+
+        cd $DEPSDIR/src/hdf5-1.10.7
+        ./configure --prefix=$INSTALLDIR --with-zlib=$INSTALLDIR --disable-shared --enable-tests=no --enable-tools=no
+        make
+        make install
 
     - name: Compile project
       run: |
