@@ -89,14 +89,60 @@ jobs:
         update: true
         install: >-
           base-devel
+          compression
           mingw-w64-x86_64-toolchain
-          mingw-w64-x86_64-libzip
-          mingw-w64-x86_64-expat
-          mingw-w64-x86_64-hdf5
+
+    - name: Install build tools
+      run: |
+        mkdir -p deps
+        curl -O https://musl.cc/x86_64-w64-mingw32-native.zip
+        unzip -d deps x86_64-w64-mingw32-native.zip
+        rm x86_64-w64-mingw32-native.zip
+
+    - name: Download dependencies
+      run: |
+        DEPSDIR=deps/src
+        mkdir -p $DEPSDIR
+        curl -L http://zlib.net/zlib-1.2.11.tar.gz | tar -xz -C $DEPSDIR
+        curl -L https://github.com/nih-at/libzip/releases/download/v1.8.0/libzip-1.8.0.tar.gz | tar -xz -C $DEPSDIR
+        curl -L https://github.com/libexpat/libexpat/releases/download/R_2_4_1/expat-2.4.1.tar.gz | tar -xz -C $DEPSDIR
+        curl -L https://support.hdfgroup.org/ftp/HDF5/releases/hdf5-1.10/hdf5-1.10.7/src/hdf5-1.10.7.tar.gz | tar -xz -C $DEPSDIR
+
+    - name: Build dependencies
+      run: |
+
+        DEPSDIR=$(pwd)/deps
+        INSTALLDIR=$DEPSDIR/usr
+        mkdir -p $INSTALLDIR
+
+        export CC=$DEPSDIR/x86_64-w64-mingw32-native/bin/x86_64-w64-mingw32-gcc
+
+        cd $DEPSDIR/src/zlib-1.2.11
+        ./configure --prefix=$INSTALLDIR --static
+        make
+        make install
+
+        cd $DEPSDIR/src/libzip-1.8.0
+        mkdir -p build
+        cd build
+        cmake -DCMAKE_INSTALL_PREFIX=$INSTALLDIR -DZLIB_LIBRARY=$INSTALLDIR/lib/libz.a -DENABLE_BZIP2=OFF -DENABLE_LZMA=OFF -DENABLE_ZSTD=OFF -DENABLE_COMMONCRYPTO=OFF -DENABLE_GNUTLS=OFF -DENABLE_MBEDTLS=OFF -DENABLE_OPENSSL=OFF -DENABLE_WINDOWS_CRYPTO=OFF -DBUILD_SHARED_LIBS=OFF -DBUILD_TOOLS=OFF -DBUILD_REGRESS=OFF -DBUILD_EXAMPLES=OFF -DBUILD_DOC=OFF ..
+        make
+        make install
+
+        cd $DEPSDIR/src/expat-2.4.1
+        ./configure --prefix=$INSTALLDIR --enable-shared=no --without-xmlwf --without-examples --without-tests
+        make
+        make install
+
+        cd $DEPSDIR/src/hdf5-1.10.7
+        ./configure --prefix=$INSTALLDIR --with-zlib=$INSTALLDIR --disable-shared --enable-tests=no --enable-tools=no
+        make
+        make install
 
     - name: Compile project
       run: |
-        LIBS='-lzip -lexpat -lhdf5_hl -lhdf5' make
+        export CC="$DEPSDIR/x86_64-w64-mingw32-native/bin/x86_64-w64-mingw32-gcc -Ideps/usr/include"
+        LIBS='deps/usr/lib/libzip.a deps/usr/lib/libexpat.a deps/usr/lib/libhdf5_hl.a deps/usr/lib/libhdf5.a deps/usr/lib/libz.a -ldl -lm -lc' make
 
     - name: Store compiled binary
       uses: actions/upload-artifact@v2
