@@ -4,6 +4,7 @@
 #include <stdio.h>
 #include <stdbool.h>
 #include <string.h>
+#include <ctype.h>
 
 // using strptime, so won't compile on Windows without gcc/mingw
 #include <time.h>
@@ -294,6 +295,12 @@ void link_collection(void* p) {
         fprintf(stderr, "Encountered a collection name longer than %d characters: %s%s\n",
             MAXSTRINGLENGTH, collection->h5name, collection->name);
         exit(EXIT_FAILURE);
+    }
+
+    // TODO: Force ASCII characters only
+
+    for (size_t i = 0; collection->h5name[i] != '\0'; i++) {
+        collection->h5name[i] = tolower(collection->h5name[i]);
     }
 
 }
