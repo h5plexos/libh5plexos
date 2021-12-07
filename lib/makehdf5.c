@@ -134,6 +134,9 @@ void add_times(hid_t meta, const char* localformat, int compressionlevel) {
     for (size_t i_t = 0; i_t < n_plexosperiods; i_t++) {
 
         struct plexosTable table = tables[period_tables[i_t]];
+
+        if (!table.count) continue;
+
         void** periodrows = *(table.rows);
         char* period_timestamps = calloc(table.count, sizeof(char[20]));
         memset(period_timestamps,'\0', table.count * sizeof(char[20]));
