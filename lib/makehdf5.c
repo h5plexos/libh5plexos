@@ -10,11 +10,11 @@
 #define H5PLEXOS_VERSION "v0.6.0"
 
 const char* object_names[n_membershipfields] = {
-    [first] = "Name", [second] = "Category"
+    [first] = "name", [second] = "category"
 };
 
 const char* relation_names[n_membershipfields] = {
-    [first] = "Parent", [second] = "Child"
+    [first] = "parent", [second] = "child"
 };
 
 size_t field_offsets[n_membershipfields] = {
@@ -93,6 +93,11 @@ void add_collections(hid_t meta, int compressionlevel) {
             // This sets the maximum dataspace size to infinite (the current
             // size is of course table.nrows). Not a big deal, but might be
             // nice to keep current == max
+
+            // This "table" construct also adds a bunch of unneccesary metadata
+            // about the compound datatype. Would be preferable to just define
+            // a compound (string,string) struct from scratch.
+
             H5TBmake_table(
                 collection->h5name, table_group, collection->h5name,
                 n_membershipfields, collection->nmembers, sizeof(struct plexosMembershipRow),
