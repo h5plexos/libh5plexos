@@ -199,7 +199,7 @@ hid_t dataset(hid_t dat, struct plexosKeyIndex* ki, int compressionlevel) {
 
         dset = H5Dcreate2(h5coll, property_name, H5T_IEEE_F64LE, dset_space,
                           H5P_DEFAULT, dset_properties, H5P_DEFAULT);
-        H5LTset_attribute_int(h5coll, property_name, "period_offset", &(ki->periodoffset), 1);
+        set_attribute_int(dset, "period_offset", &(ki->periodoffset));
         H5LTset_attribute_string(h5coll, property_name, "units",
             is_summarydata ? property->summaryunit.ptr->value : property->unit.ptr->value);
 
@@ -244,6 +244,14 @@ void add_values(hid_t dat, int compressionlevel) {
 
     }
 
+}
+
+void set_attribute_int(hid_t dset, char* name, size_t* value) {
+    hid_t dspace = H5Screate(H5S_SCALAR);
+    hid_t attr = H5Acreate(dset, name, H5T_NATIVE_INT, dspace, H5P_DEFAULT, H5P_DEFAULT);
+    H5Awrite(attr, H5T_NATIVE_INT, value);
+    H5Aclose(attr);
+    H5Sclose(dspace);
 }
 
 char default_localformat[20] = "%d/%m/%Y %T";
