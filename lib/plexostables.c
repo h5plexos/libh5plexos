@@ -357,6 +357,8 @@ void populate_object(void* p, const char* field, const char* value) {
         row->class.idx = atoi(value);
     } else if (strequals(field, "category_id")) {
         row->category.idx = atoi(value);
+    } else if (strequals(field, "GUID")) {
+        // ignore guid fields
     } else {
         fprintf(stderr, "Unexpected field %s in object table\n", field);
         exit(EXIT_FAILURE);
