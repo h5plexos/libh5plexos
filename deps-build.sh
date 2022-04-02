@@ -4,7 +4,7 @@ DEPSDIR=$(pwd)/deps
 INSTALLDIR=$DEPSDIR/usr
 mkdir -p $INSTALLDIR
 
-cd $DEPSDIR/src/zlib-1.2.11
+cd $DEPSDIR/src/zlib-1.2.12
 ./configure --prefix=$INSTALLDIR --static
 make
 make install

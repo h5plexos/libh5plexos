@@ -79,7 +79,7 @@ jobs:
         export INCLUDE_PATH=$INSTALLDIR/include
         export LIBRARY_PATH=$INSTALLDIR/lib
 
-        cd $DEPSDIR/src/zlib-1.2.11
+        cd $DEPSDIR/src/zlib-1.2.12
         make -fwin32/Makefile.gcc
         make install -fwin32/Makefile.gcc
 
