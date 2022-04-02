@@ -9,8 +9,8 @@ struct parseSpec {
 
 void parse(zip_t* archive, int* err, zip_int64_t xml_idx, struct parseSpec spec);
 
-struct parseSpec summary_pass;
-struct parseSpec populate_pass;
+extern struct parseSpec summary_pass;
+extern struct parseSpec populate_pass;
 
 #endif // xmlparse_INCLUDED
 

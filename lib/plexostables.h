@@ -18,7 +18,7 @@ enum plexosPeriodIdx {
     n_plexosperiods
 };
 
-int period_tables[n_plexosperiods];
+extern int period_tables[n_plexosperiods];
 
 typedef void populate_function(void* row, const char* field, const char* value);
 typedef void link_function(void* row);
@@ -44,7 +44,7 @@ struct plexosTable {
 
 };
 
-struct plexosTable tables[n_plexostables];
+extern struct plexosTable tables[n_plexostables];
 
 struct plexosTable* get_plexostable(const char* tablename);
 
@@ -440,7 +440,7 @@ struct plexosData {
     double* values[8];
 };
 
-struct plexosData data;
+extern struct plexosData data;
 
 void init_data();
 void finalize_data();
