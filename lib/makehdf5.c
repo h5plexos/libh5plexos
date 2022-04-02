@@ -173,7 +173,7 @@ hid_t dataset(hid_t dat, struct plexosKeyIndex* ki, int compressionlevel) {
     bool is_summarydata = property->issummary && ki->periodtype != 0;
     char* property_name = is_summarydata ? property->summaryname : property->name;
 
-    hid_t h5phase = H5LTfind_dataset(dat, phase->h5name) ?
+    hid_t h5phase = H5LTpath_valid(dat, phase->h5name, true) ?
         H5Gopen2(dat, phase->h5name, H5P_DEFAULT) :
         H5Gcreate2(dat, phase->h5name, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
     if (h5phase < 0) {
@@ -181,7 +181,7 @@ hid_t dataset(hid_t dat, struct plexosKeyIndex* ki, int compressionlevel) {
         exit(EXIT_FAILURE);
     }
 
-    hid_t h5period = H5LTfind_dataset(h5phase, period->h5name) ?
+    hid_t h5period = H5LTpath_valid(h5phase, period->h5name, true) ?
         H5Gopen2(h5phase, period->h5name, H5P_DEFAULT) :
         H5Gcreate2(h5phase, period->h5name, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
     if (h5period < 0) {
@@ -189,7 +189,7 @@ hid_t dataset(hid_t dat, struct plexosKeyIndex* ki, int compressionlevel) {
         exit(EXIT_FAILURE);
     }
 
-    hid_t h5coll = H5LTfind_dataset(h5period, collection->h5name) ?
+    hid_t h5coll = H5LTpath_valid(h5period, collection->h5name, true) ?
         H5Gopen2(h5period, collection->h5name, H5P_DEFAULT) :
         H5Gcreate2(h5period, collection->h5name, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
     if (h5coll < 0) {
@@ -198,7 +198,7 @@ hid_t dataset(hid_t dat, struct plexosKeyIndex* ki, int compressionlevel) {
     }
 
     hid_t dset;
-    if (H5LTfind_dataset(h5coll, property_name)) {
+    if (H5LTpath_valid(h5coll, property_name, true)) {
 
         dset = H5Dopen2(h5coll, property_name, H5P_DEFAULT);
 
