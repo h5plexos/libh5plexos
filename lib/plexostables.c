@@ -220,6 +220,8 @@ void populate_attribute(void* p, const char* field, const char* value) {
         row->class.idx = atoi(value);
     } else if (strequals(field, "lang_id")) {
         row->lang = atoi(value);
+    } else if (strequals(field, "input_mask")) {
+        // ignore input_mask fields
     } else {
         fprintf(stderr, "Unexpected field %s in attribute table\n", field);
         exit(EXIT_FAILURE);
