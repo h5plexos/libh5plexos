@@ -695,7 +695,7 @@ void populate_key_index(void* p, const char* field, const char* value) {
     if (strequals(field, "period_type_id")) {
         row->periodtype = atoi(value);
     } else if (strequals(field, "position")) {
-        row->position = atoi(value);
+        row->position = atol(value);
     } else if (strequals(field, "length")) {
         row->length = atoi(value);
     } else if (strequals(field, "period_offset")) {
